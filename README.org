@@ -1,0 +1,10 @@
+* Stockfigter Spoilers!!!
+
+This repository is full of them. 
+
+If you are looking for an R client, look [[https://github.com/richiemorrisroe/stockfighterr][here]]. 
+
+Otherwise, you will be spoiled. 
+
+
+More seriously, this package represents some code that I built on top of the client for Stockfighter referenced above. It's probably only useful in that context. 
