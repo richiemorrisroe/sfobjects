@@ -435,9 +435,8 @@ get_spreads <- function(venue, stock) {
 ##' More bullshit
 ##' @title trade
 ##' @param orderbook an orderbook object
-##' @param details a level object, or the string TEST
 ##' @param qty the qty to trade
-##' @param price the price to trade at
+##' @param prices the price to trade at
 ##' @return a list containing the buy and sell trades, as well as an orderbook
 ##' @author richie
 ##' @export
@@ -478,8 +477,7 @@ trade <- function(level=NULL, qty=NULL, prices=NULL) {
     }
     
     names(reslist) <- directions
-    ob <- get_spreads(venue, stock)
-    return(list(trades=reslist, ob=ob))
+    return(reslist)
     }
 ##' Some stuff
 ##'
@@ -554,22 +552,9 @@ place_many_orders <- function(account, venue, stock,
 get_price_and_qty <- function(orderbook, replay=TRUE) {
     bids.ord <- get_bids(orderbook)
     asks.ord <- get_asks(orderbook)
-    bidna <- all(is.na(bids))
-    askna <- all(is.na(asks))
+    bidna <- all(is.na(bids.ord))
+    askna <- all(is.na(asks.ord))
     bothna <- all(bidna, askna)
-
-    if(bidna) {
-        spread <- 200
-        message(paste("no curent bids, making market"))
-            askprice <- min(asks.ord$price)
-        bidprice <- ceiling(askprice - (spread / 4))
-        return(list(bidprice, askprice))
-        }
-      if(askna) {
-          bidprice <- max(bids.ord$price) + 1
-          askprice <- floor(bidprice + (spread / 4))
-          return(list(bidprice, askprice))
-    }
     if (bothna) {
         message("absolutely no market, monitoring again")
         ven <- venue(orderbook)
@@ -579,18 +564,32 @@ get_price_and_qty <- function(orderbook, replay=TRUE) {
                 parse_response() %>%
                 orderbook() %>%
                 get_price_and_qty()
-            return(list(bidprice=bids[1], askprice=bids[2]))
+            return(list(bidprice=bids.ord[1], askprice=bids.ord[2]))
         }
         else {
             return(list(bidprice=NA, askprice=NA))
         }
     }
+    
+    if(bidna) {
+        spread <- 200
+        message(paste("no curent bids, making market"))
+        askprice <- min(asks.ord$price)
+        bidprice <- ceiling(askprice - (spread / 4))
+        return(list(bidprice, askprice))
+        }
+      if(askna) {
+          bidprice <- max(bids.ord$price) + 1
+          askprice <- floor(bidprice + (spread / 4))
+          return(list(bidprice, askprice))
+    }
+
     message("got to calculating spread")
-    spread <- min(asks$price) - max(bids$price)  
+    spread <- min(asks.ord$price) - max(bids.ord$price)  
     myspread <- floor(spread * 0.8)
     message(paste("spread is", myspread))
-    bidprice <- ceiling(max(bids$price) + (myspread / 4))
-    askprice <- floor(min(asks$price) - (myspread / 4))
+    bidprice <- ceiling(max(bids.ord$price) + (myspread / 4))
+    askprice <- floor(min(asks.ord$price) - (myspread / 4))
 
     return(list(bidprice=bidprice, askprice=askprice))
 }
@@ -673,12 +672,12 @@ clear_position <- function(level, position, apikey) {
         if(sumpos$position<0) {
             compbuy <- 0
             ord <- as_orderbook(venue, stock)
-            bids <- bids(ord)
-            if(dim(na.omit(bids))[1]==0) {
+            bidsdf <- get_bids(ord)
+            if(all(is.na(bidsdf)))  {
                 q <- get_quote(venue, stock) %>% parse_response()
                 pricebuy <- q$bid + 1
             }
-            pricebuy <- max(bids$price) + 1
+            pricebuy <- max(bidsdf$price) + 1
             message("buying at ", pricebuy, "\n")
             buy <- create_order(account, venue, stock, price=pricebuy, qty=(sumpos$position)*-1, direction="buy", ordertype="ioc")
             buyp <-
