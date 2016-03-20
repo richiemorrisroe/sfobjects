@@ -633,17 +633,17 @@ update_position <- function(position, apikey) {
 ##' @return a new position object
 ##' @author richie
 ##' @export
-clear_position <- function(level, position, apikey) {
+clear_position <- function(level, position, apikey, tolerance) {
     account <- account(level)
     venue <- venue(level)
     stock <- ticker(level)
     sumpos <- print(position)
-    while(sumpos$position!=0) {
+    while(abs(sumpos$position)<tolerance) {
         if(sumpos$position>0) {
             compsell <- 0
             ord <- as_orderbook(venue, stock)
-            asks <- get_asks(ord)
-            if(dim(na.omit(asks))[1]==0) {
+            asksord <- get_asks(ord)
+            if(all(is.na(askord))) {
                 q <- get_quote(venue, stock) %>% parse_response()
                 if(!is.null(q$ask)) {
                     pricesell <- q$ask + 1
