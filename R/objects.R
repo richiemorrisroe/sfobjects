@@ -26,12 +26,12 @@ setGeneric("account", function(object) {
 ##' Function to extract the current asks from an orderbook object
 ##'
 ##' See above
-##' @title bids
+##' @title get_bids
 ##' @param object an orderbook object
 ##' @return a dataframe containing the bids on the orderbook
 ##' @author richie
 ##' @export
-bids <- function(object) {
+get_bids <- function(object) {
     if(dim(na.omit(object@bids))[1]==0) {
         return(NA)
     } else {
@@ -51,12 +51,12 @@ bidsummary <- function(bids) {
 ##' extract the bids component of an orderbook
 ##'
 ##' See above
-##' @title asks
+##' @title get_asks
 ##' @param object 
 ##' @return a dataframe containing the current asks from the orderbook obect
 ##' @author richie
 ##' @export
-asks <- function(object) {
+get_asks <- function(object) {
     if(dim(na.omit(object@asks))[1]==0) {
         return(NA)
     } else {
@@ -337,8 +337,8 @@ setClass("orderbook-list", contains="orderbook")
 as.data.frame.orderbook <- function (x, row.names = NULL, optional = FALSE, ...) {
     ordslots <- c("ymdhms", "bids", "asks", "ok", "account", "venues", "tickers")
     ##subtract two for bid and asks, add 3 for the cols of ob@bids/@asks
-    ordbids <- bids(x)
-    ordasks <- asks(x)
+    ordbids <- get_bids(x)
+    ordasks <- get_asks(x)
     time <- x@ymdhms
     names <- c("time", names(ordbids))
     bidask <- rbind(ordbids, ordasks)

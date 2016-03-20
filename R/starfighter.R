@@ -552,9 +552,12 @@ place_many_orders <- function(account, venue, stock,
 ##' @author richie
 ##' @export
 get_price_and_qty <- function(orderbook, replay=TRUE) {
-    bids <- bids(orderbook)
-    asks <- asks(orderbook)
-    if (all(is.na(bids)) & all(is.na(asks))) {
+    bids <- get_bids(orderbook)
+    asks <- get_asks(orderbook)
+    bidna <- all(is.na(bids))
+    askna <- all(is.na(asks))
+    bothna <- all(bidna, askna)
+    if (bothna) {
         message("absolutely no market, monitoring again")
         ven <- venue(orderbook)
         tick <- ticker(orderbook)
@@ -569,7 +572,7 @@ get_price_and_qty <- function(orderbook, replay=TRUE) {
             return(list(bidprice=NA, askprice=NA))
         }
     }
-    if(all(is.na(bids)) | all(is.na(asks))) {
+    if(bidna & !askna) {
         string <- ifelse(all(is.na(bids)), "bids", "asks")
         spread <- 200
         message(paste("no current ", string, " making market"))
@@ -585,7 +588,7 @@ get_price_and_qty <- function(orderbook, replay=TRUE) {
 
 
     else {
-        cat("got to calculating spread", "\n")
+        message("got to calculating spread")
         spread <- min(asks$price) - max(bids$price)  
         myspread <- floor(spread * 0.8)
         message(paste("spread is", myspread))
@@ -643,7 +646,7 @@ clear_position <- function(level, position, apikey) {
         if(sumpos$position>0) {
             compsell <- 0
             ord <- as_orderbook(venue, stock)
-            asks <- asks(ord)
+            asks <- get_asks(ord)
             if(dim(na.omit(asks))[1]==0) {
                 q <- get_quote(venue, stock) %>% parse_response()
                 if(!is.null(q$ask)) {
