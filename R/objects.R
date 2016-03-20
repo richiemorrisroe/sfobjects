@@ -35,8 +35,8 @@ get_bids <- function(object) {
     if(dim(na.omit(object@bids))[1]==0) {
         return(NA)
     } else {
-                      object@bids
-                  }
+        object@bids
+    }
 }
 bidsummary <- function(bids) {
     bids2 <- bids %>%
@@ -263,21 +263,6 @@ get_component <- function(x, component) {
     res
 }
 
-##' Helper function for the orderbook objects and functions
-##' 
-##' @title get_bids
-##' @param bid the bid component of an orderbook object
-##' @return either NA or a bid object
-##' @author richie
-
-get_bids <- function(bid) {
-    if(is.null(bid)) {
-        return(NA)
-    }
-    else {
-        return(bid)
-    }
-}
 ##' @export
 spreads.orderbook <- function(orderbook) {
     bids <- orderbook@bids
