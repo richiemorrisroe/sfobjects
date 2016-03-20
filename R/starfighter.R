@@ -554,7 +554,7 @@ place_many_orders <- function(account, venue, stock,
 get_price_and_qty <- function(orderbook, replay=TRUE) {
     bids <- bids(orderbook)
     asks <- asks(orderbook)
-    if (all(is.na(bids)) && all(is.na(asks))) {
+    if (all(is.na(bids)) & all(is.na(asks))) {
         message("absolutely no market, monitoring again")
         ven <- venue(orderbook)
         tick <- ticker(orderbook)
@@ -569,7 +569,7 @@ get_price_and_qty <- function(orderbook, replay=TRUE) {
             return(list(bidprice=NA, askprice=NA))
         }
     }
-    if(all(is.na(bids)) || all(is.na(asks))) {
+    if(all(is.na(bids)) | all(is.na(asks))) {
         string <- ifelse(all(is.na(bids)), "bids", "asks")
         spread <- 200
         message(paste("no current ", string, " making market"))
