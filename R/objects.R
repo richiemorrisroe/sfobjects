@@ -33,7 +33,7 @@ setGeneric("account", function(object) {
 ##' @export
 bids <- function(object) {
     if(dim(na.omit(object@bids))[1]==0) {
-        return(0)
+        return(NA)
     } else {
                       object@bids
                   }
@@ -58,7 +58,7 @@ bidsummary <- function(bids) {
 ##' @export
 asks <- function(object) {
     if(dim(na.omit(object@asks))[1]==0) {
-        return(0)
+        return(NA)
     } else {
         object@asks
     }
