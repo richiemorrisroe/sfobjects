@@ -554,7 +554,7 @@ place_many_orders <- function(account, venue, stock,
 get_price_and_qty <- function(orderbook, replay=TRUE) {
     bids <- bids(orderbook)
     asks <- asks(orderbook)
-    if (all(is.na(bids)) & all(is.na(asks))) {
+    if (all(is.na(bids)) && all(is.na(asks))) {
         message("absolutely no market, monitoring again")
         ven <- venue(orderbook)
         tick <- ticker(orderbook)
@@ -634,7 +634,7 @@ update_position <- function(position, apikey) {
 ##' @return a new position object
 ##' @author richie
 ##' @export
-clear_position <- function(level, position) {
+clear_position <- function(level, position, apikey) {
     account <- account(level)
     venue <- venue(level)
     stock <- ticker(level)
@@ -665,7 +665,7 @@ clear_position <- function(level, position) {
                 if(sellp$totalFilled==0) {
                     compsell <- compsell + 1
                 }
-            position <- update_position(position)
+            position <- update_position(position, apikey)
             sumpos <- print(position)
             print(position)
         }
@@ -688,7 +688,7 @@ clear_position <- function(level, position) {
                 if(buyp$totalFilled==0) {
                     compbuy <- compbuy + 1
                 }
-            position <- update_position(position)
+            position <- update_position(position, apikey)
             sumpos <- print(position)
             print(position)
         }
