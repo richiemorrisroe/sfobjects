@@ -591,7 +591,7 @@ get_price_and_qty <- function(orderbook, replay=TRUE) {
     bidprice <- ceiling(max(bids.ord$price) + (myspread / 4))
     askprice <- floor(min(asks.ord$price) - (myspread / 4))
 
-    return(list(bidprice=bidprice, askprice=askprice))
+    return(list(bidprice=bidprice, askprice=askprice, spread=spread))
 }
 ##' Update a position object based on orders
 ##'
@@ -653,7 +653,7 @@ clear_position <- function(level, position, apikey, tolerance) {
                 }
             }
             else {
-                pricesell <- min(asks$price) - (1 + compsell)
+                pricesell <- min(asksord$price) - (1 + compsell)
             }
             message("selling at ", pricesell, "\n")
             sell <- create_order(account, venue, stock, price=pricesell, qty=sumpos$position, direction="sell", ordertype="ioc")
