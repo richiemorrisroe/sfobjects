@@ -552,17 +552,30 @@ place_many_orders <- function(account, venue, stock,
 ##' @author richie
 ##' @export
 get_price_and_qty <- function(orderbook, replay=TRUE) {
-    bids <- get_bids(orderbook)
-    asks <- get_asks(orderbook)
+    bids.ord <- get_bids(orderbook)
+    asks.ord <- get_asks(orderbook)
     bidna <- all(is.na(bids))
     askna <- all(is.na(asks))
     bothna <- all(bidna, askna)
+
+    if(bidna) {
+        spread <- 200
+        message(paste("no curent bids, making market"))
+            askprice <- min(asks.ord$price)
+        bidprice <- ceiling(askprice - (spread / 4))
+        return(list(bidprice, askprice))
+        }
+      if(askna) {
+          bidprice <- max(bids.ord$price) + 1
+          askprice <- floor(bidprice + (spread / 4))
+          return(list(bidprice, askprice))
+    }
     if (bothna) {
         message("absolutely no market, monitoring again")
         ven <- venue(orderbook)
         tick <- ticker(orderbook)
         if(!replay) {
-            bids <- get_orderbook(ven, tick) %>%
+            bids.ord <- get_orderbook(ven, tick) %>%
                 parse_response() %>%
                 orderbook() %>%
                 get_price_and_qty()
@@ -572,29 +585,13 @@ get_price_and_qty <- function(orderbook, replay=TRUE) {
             return(list(bidprice=NA, askprice=NA))
         }
     }
-    if(bidna & !askna) {
-        string <- ifelse(all(is.na(bids)), "bids", "asks")
-        spread <- 200
-        message(paste("no current ", string, " making market"))
-        if(string == "bids") {
-            askprice <- min(asks$price)
-            bidprice <- ceiling(askprice - (spread / 4))
-        }
-        else {
-            bidprice <- max(asks$price)
-            askprice <- floor(bidprice + (spread / 4))
-        }
-    }
+    message("got to calculating spread")
+    spread <- min(asks$price) - max(bids$price)  
+    myspread <- floor(spread * 0.8)
+    message(paste("spread is", myspread))
+    bidprice <- ceiling(max(bids$price) + (myspread / 4))
+    askprice <- floor(min(asks$price) - (myspread / 4))
 
-
-    else {
-        message("got to calculating spread")
-        spread <- min(asks$price) - max(bids$price)  
-        myspread <- floor(spread * 0.8)
-        message(paste("spread is", myspread))
-        bidprice <- ceiling(max(bids$price) + (myspread / 4))
-        askprice <- floor(min(asks$price) - (myspread / 4))
-    }
     return(list(bidprice=bidprice, askprice=askprice))
 }
 ##' Update a position object based on orders
