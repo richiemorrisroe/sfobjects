@@ -602,12 +602,12 @@ get_price_and_qty <- function(orderbook, replay=TRUE) {
 ##' @return an updated object of class position
 ##' @author richie
 ##' @export
-update_position <- function(position) {
+update_position <- function(position, apikey) {
     stopifnot(class(position)=="Position")
     venue <- venue(position)
     tick <- ticker(position)
     account <- account(position)
-    allord <- get_all_orders(venue, account) %>%
+    allord <- get_all_orders(venue, account, apikey) %>%
         parse_response()
     if(length(allord$orders)>0) {
         ords <- allord$orders %>%
