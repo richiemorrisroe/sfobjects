@@ -85,27 +85,42 @@ as.fnumeric <- function(x) {
 ##'
 ##' This is overcomplicated and conflates the price to pay with 
 ##' @title get_price
-##' @param quote 
+##' @param venue 
+##' @param ticker 
 ##' @param fudge 
 ##' @return a vector containing a fudged bid and a qty to trade with
 ##' @author richie
-get_bid <- function(quote, fudge=0) {
-    ask.cur <- quote$ask
-    if(is.null(ask.cur)) {
-        fudged_bid <- NA
+##' @export
+get_bid <- function(venue, ticker, spread=10) {
+    q <- get_quote(venue, ticker) %>% parse_response()
+    bid <- q$bid
+    ask <- q$ask
+    last <- q$last
+    print(c(bid, ask, last))
+    if(is.null(bid) & is.null(ask)) {
+        message("both missing")
+        price <- last
+        buyprice <- price - floor(spread / 4)
+        sellprice <- price + floor(spead / 4)
+        
+    }
+    if(is.null(bid) & !is.null(ask)) {
+        message("bid missing")
+        sellprice <- ask
+        buyprice <- ask - floor(spread / 4)
+    }
+    if(is.null(ask) & !is.null(bid)) {
+        message("ask missing")
+        buyprice <- bid
+        sellprice <- bid + floor(spread / 4)
     }
     else {
-        fudged_bid <- floor(ask.cur*(fudge+1))
+        message("both present")
+        spread <- ask - bid
+        buyprice <- bid + floor(spread / 4)
+        sellprice <- ask - floor(spread / 4)
     }
-    askSize <- quote$askSize
-    if(is.null(askSize)) {
-        qty <- NA
-    }
-    else {
-        qty <- floor(askSize/100)
-    }
-    state <- c(fudged_bid, qty)
-    
+    return(c(buyprice, sellprice))
 }
 ##' More level specific functions!
 ##' See above
@@ -409,7 +424,7 @@ parse_orderlist <- function(orderlist, parallel=TRUE, data.frame=TRUE) {
 ##' @return a list containing an orderbook, the spread and the minqty available 
 ##' @author richie
 ##' @export
-get_spreads <- function(venue, stock) {
+get_spreads <- function(venue, stock, spread) {
     bids <- data.frame(price=NA, qty=NA, isBuy=NA)
     asks <- data.frame(price=NA, qty=NA, isBuy=NA)
     nulls <- -1
@@ -451,12 +466,13 @@ trade <- function(level=NULL, qty=NULL, prices=NULL) {
             parse_response() %>%
             orderbook()
         prices <- unlist(get_price_and_qty(orderb))
+        print(prices)
     }
     else {
         prices <- prices
     }
-        message("buying at ", prices[[1]], "\n",
-                "Selling at ", prices[[2]], "\n")
+        message("buying at ", prices[1], "\n",
+                "Selling at ", prices[2], "\n")
     directions <- c("buy", "sell")
     reslist <- list()
     for(i in 1:length(prices)) {
@@ -549,7 +565,7 @@ place_many_orders <- function(account, venue, stock,
 ##' @return a list containing bidprice and askprice
 ##' @author richie
 ##' @export
-get_price_and_qty <- function(orderbook, replay=TRUE) {
+get_price_and_qty <- function(orderbook) {
     bids.ord <- get_bids(orderbook)
     asks.ord <- get_asks(orderbook)
     bidna <- all(is.na(bids.ord))
@@ -559,39 +575,38 @@ get_price_and_qty <- function(orderbook, replay=TRUE) {
         message("absolutely no market, monitoring again")
         ven <- venue(orderbook)
         tick <- ticker(orderbook)
-        if(!replay) {
-            bids.ord <- get_orderbook(ven, tick) %>%
-                parse_response() %>%
-                orderbook() %>%
-                get_price_and_qty()
-            return(list(bidprice=bids.ord[1], askprice=bids.ord[2]))
+        q <- get_quote(ven, tick) %>% parse_response()
+        last <- q$last
+        spread <- 40
+        bidprice <- last - (spread / 2)
+        askprice <- last + (spread / 2)
+        return(list(bidprice, askprice, spread))
         }
-        else {
-            return(list(bidprice=NA, askprice=NA))
-        }
-    }
     
     if(bidna) {
-        spread <- 200
+        spread <- 20
         message(paste("no curent bids, making market"))
         askprice <- min(asks.ord$price)
         bidprice <- ceiling(askprice - (spread / 4))
-        return(list(bidprice, askprice))
+        return(list(bidprice, askprice, spread))
         }
-      if(askna) {
+    if(askna) {
+        spread <- 20
           bidprice <- max(bids.ord$price) + 1
           askprice <- floor(bidprice + (spread / 4))
-          return(list(bidprice, askprice))
+          return(list(bidprice, askprice, spread))
     }
 
     message("got to calculating spread")
+    if(!bothna) {
     spread <- min(asks.ord$price) - max(bids.ord$price)  
     myspread <- floor(spread * 0.8)
     message(paste("spread is", myspread))
     bidprice <- ceiling(max(bids.ord$price) + (myspread / 4))
     askprice <- floor(min(asks.ord$price) - (myspread / 4))
 
-    return(list(bidprice=bidprice, askprice=askprice, spread=spread))
+    return(list(bidprice, askprice, spread))
+    }
 }
 ##' Update a position object based on orders
 ##'
