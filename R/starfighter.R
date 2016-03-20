@@ -669,8 +669,7 @@ clear_position <- function(level, position, apikey, tolerance) {
 
         if(sumpos$position<0) {
             compbuy <- 0
-            ord <- as_orderbook(venue, stock)
-            bidsdf <- get_bid(venue, stock)
+             bidsdf <- get_bid(venue, stock)
             pricebuy <- bidsdf[1] + 1
             message("buying at ", pricebuy, "\n")
             buy <- create_order(account, venue, stock, price=pricebuy, qty=(sumpos$position)*-1, direction="buy", ordertype="ioc")
@@ -685,6 +684,5 @@ clear_position <- function(level, position, apikey, tolerance) {
             sumpos <- print(position)
             print(position)
         }
-    }
     return(position)
 }
