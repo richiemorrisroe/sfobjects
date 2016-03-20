@@ -91,18 +91,24 @@ as.fnumeric <- function(x) {
 ##' @return a vector containing a fudged bid and a qty to trade with
 ##' @author richie
 ##' @export
-get_bid <- function(venue, ticker, spread=10) {
+get_bid <- function(venue, ticker, spread=20) {
     q <- get_quote(venue, ticker) %>% parse_response()
     bid <- q$bid
     ask <- q$ask
     last <- q$last
     print(c(bid, ask, last))
+    if(all(is.null(bid) & is.null(ask) & is.null(last))) {
+        q2 <- get_quote(venue, ticker)
+        qp <- parse_response(q2)
+        bid <- qp$bid
+        ask <- qp$ask
+        last <- qp$last
+    }
     if(is.null(bid) & is.null(ask)) {
         message("both missing")
         price <- last
         buyprice <- price - floor(spread / 4)
-        sellprice <- price + floor(spead / 4)
-        
+        sellprice <- price + floor(spread / 4)
     }
     if(is.null(bid) & !is.null(ask)) {
         message("bid missing")
@@ -119,6 +125,9 @@ get_bid <- function(venue, ticker, spread=10) {
         spread <- ask - bid
         buyprice <- bid + floor(spread / 4)
         sellprice <- ask - floor(spread / 4)
+    }
+    if(is.null(buyprice) & is.null(sellprice)) {
+        browser()
     }
     return(c(buyprice, sellprice))
 }
@@ -455,24 +464,14 @@ get_spreads <- function(venue, stock, spread) {
 ##' @return a list containing the buy and sell trades, as well as an orderbook
 ##' @author richie
 ##' @export
-trade <- function(level=NULL, qty=NULL, prices=NULL) {
+trade <- function(level=NULL, qty=NULL) {
     account <- account(level)
     venue <- venue(level)
     stock <- ticker(level)
-
     qty <- qty
-    if(is.null(prices)) {
-        orderb <- get_orderbook(venue, stock) %>%
-            parse_response() %>%
-            orderbook()
-        prices <- unlist(get_price_and_qty(orderb))
-        print(prices)
-    }
-    else {
-        prices <- prices
-    }
-        message("buying at ", prices[1], "\n",
-                "Selling at ", prices[2], "\n")
+        prices <- get_bid(venue, stock)
+    message("buying at ", prices[1], "\n",
+            "Selling at ", prices[2], "\n")
     directions <- c("buy", "sell")
     reslist <- list()
     for(i in 1:length(prices)) {
@@ -491,7 +490,6 @@ trade <- function(level=NULL, qty=NULL, prices=NULL) {
                 message(placed$error)
             }
     }
-    
     names(reslist) <- directions
     return(reslist)
     }
@@ -571,16 +569,12 @@ get_price_and_qty <- function(orderbook) {
     bidna <- all(is.na(bids.ord))
     askna <- all(is.na(asks.ord))
     bothna <- all(bidna, askna)
+    venue <- venue(orderbook)
+    tick <- ticker(orderbook)
     if (bothna) {
         message("absolutely no market, monitoring again")
-        ven <- venue(orderbook)
-        tick <- ticker(orderbook)
-        q <- get_quote(ven, tick) %>% parse_response()
-        last <- q$last
-        spread <- 40
-        bidprice <- last - (spread / 2)
-        askprice <- last + (spread / 2)
-        return(list(bidprice, askprice, spread))
+        bids <- get_bid(venue, tick)
+        return(list(bids[1], bids[2], (bids[2] - bids [1])))
         }
     
     if(bidna) {
@@ -653,25 +647,14 @@ clear_position <- function(level, position, apikey, tolerance) {
     venue <- venue(level)
     stock <- ticker(level)
     sumpos <- print(position)
-    while(abs(sumpos$position)>=tolerance) {
-        if(sumpos$position>0) {
+    while(abs(sumpos$position) >= tolerance) {
+        if(sumpos$position > 0) {
             compsell <- 0
-            ord <- as_orderbook(venue, stock)
-            asksord <- get_asks(ord)
-            if(all(is.na(asksord))) {
-                q <- get_quote(venue, stock) %>% parse_response()
-                if(!is.null(q$ask)) {
-                    pricesell <- q$ask + 1
-                }
-                else {
-                 pricesell <- q$bid + 1
-                }
+            bids <- get_bid(venue, stock)
+            pricesell <- bids[2] + 1
             }
-            else {
-                pricesell <- min(asksord$price) - (1 + compsell)
-            }
-            message("selling at ", pricesell, "\n")
-            sell <- create_order(account, venue, stock, price=pricesell, qty=sumpos$position, direction="sell", ordertype="ioc")
+        message("selling at ", pricesell, "\n")
+        sell <- create_order(account, venue, stock, price=pricesell, qty=sumpos$position, direction="sell", ordertype="ioc")
                 sellp <-
                     place_order(venue, stock,
                                 body=sell, apikey=apikey) %>%
@@ -687,12 +670,8 @@ clear_position <- function(level, position, apikey, tolerance) {
         if(sumpos$position<0) {
             compbuy <- 0
             ord <- as_orderbook(venue, stock)
-            bidsdf <- get_bids(ord)
-            if(all(is.na(bidsdf)))  {
-                q <- get_quote(venue, stock) %>% parse_response()
-                pricebuy <- q$bid + 1
-            }
-            pricebuy <- max(bidsdf$price) + 1
+            bidsdf <- get_bid(venue, stock)
+            pricebuy <- bidsdf[1] + 1
             message("buying at ", pricebuy, "\n")
             buy <- create_order(account, venue, stock, price=pricebuy, qty=(sumpos$position)*-1, direction="buy", ordertype="ioc")
             buyp <-
