@@ -8,4 +8,3 @@ devtools::use_package("jsonlite")
 devtools::check(".")
 devtools::build(".")
 devtools::install(".")
-
