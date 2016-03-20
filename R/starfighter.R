@@ -638,12 +638,12 @@ clear_position <- function(level, position, apikey, tolerance) {
     venue <- venue(level)
     stock <- ticker(level)
     sumpos <- print(position)
-    while(abs(sumpos$position)<tolerance) {
+    while(abs(sumpos$position)>=tolerance) {
         if(sumpos$position>0) {
             compsell <- 0
             ord <- as_orderbook(venue, stock)
             asksord <- get_asks(ord)
-            if(all(is.na(askord))) {
+            if(all(is.na(asksord))) {
                 q <- get_quote(venue, stock) %>% parse_response()
                 if(!is.null(q$ask)) {
                     pricesell <- q$ask + 1
