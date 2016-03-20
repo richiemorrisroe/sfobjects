@@ -32,7 +32,11 @@ setGeneric("account", function(object) {
 ##' @author richie
 ##' @export
 bids <- function(object) {
-    object@bids
+    if(dim(na.omit(object@bids))[1]==0) {
+        return(0)
+    } else {
+                      object@bids
+                  }
 }
 bidsummary <- function(bids) {
     bids2 <- bids %>%
@@ -53,7 +57,11 @@ bidsummary <- function(bids) {
 ##' @author richie
 ##' @export
 asks <- function(object) {
-    object@asks
+    if(dim(na.omit(object@asks))[1]==0) {
+        return(0)
+    } else {
+        object@asks
+    }
 }
 ## setMethod("asks", signature("orderbook"),
 ##           def = asks)

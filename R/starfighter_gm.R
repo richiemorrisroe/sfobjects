@@ -1,7 +1,6 @@
 #tiny change
 library(httr)
 base_gm <- "https://www.stockfighter.io/gm/"
-apikey <- scan("apikey.txt", what="char")
 ##' Start a level by name
 ##' See above
 ##' @title start_level

@@ -1,7 +1,6 @@
 #tinychange
 require(httr)
 require(dplyr)
-apikey <- scan("apikey.txt", what="char")
 ##' Convert factor variable to numeric
 ##'
 ##' Mostly because I dislike StringsAsFactors=FALSE
