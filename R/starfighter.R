@@ -469,7 +469,7 @@ trade <- function(level=NULL, qty=NULL) {
     venue <- venue(level)
     stock <- ticker(level)
     qty <- qty
-        prices <- get_bid(venue, stock)
+    prices <- get_bid(venue, stock)
     message("buying at ", prices[1], "\n",
             "Selling at ", prices[2], "\n")
     directions <- c("buy", "sell")
@@ -653,7 +653,7 @@ clear_position <- function(level, position, apikey, tolerance) {
             bids <- get_bid(venue, stock)
             pricesell <- bids[2] + 1
             }
-        message("selling at ", pricesell, "\n")
+        message("clearing position at  ", pricesell, "\n")
         sell <- create_order(account, venue, stock, price=pricesell, qty=sumpos$position, direction="sell", ordertype="ioc")
                 sellp <-
                     place_order(venue, stock,
@@ -671,7 +671,7 @@ clear_position <- function(level, position, apikey, tolerance) {
             compbuy <- 0
              bidsdf <- get_bid(venue, stock)
             pricebuy <- bidsdf[1] + 1
-            message("buying at ", pricebuy, "\n")
+            message("clearing position at  ", pricebuy, "\n")
             buy <- create_order(account, venue, stock, price=pricebuy, qty=(sumpos$position)*-1, direction="buy", ordertype="ioc")
             buyp <-
                 place_order(venue, stock,
