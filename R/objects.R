@@ -488,7 +488,8 @@ print.Position <- function (x, ...)
         print(data.frame(
             sold=x@total_sold,
             bought=x@total_bought,
-            position=cur_pos))
+            position=cur_pos,
+            cash=x@cash/100))
     }
 setMethod("print",
     signature(x = "Position"),
