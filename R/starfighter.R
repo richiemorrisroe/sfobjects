@@ -91,13 +91,15 @@ as.fnumeric <- function(x) {
 ##' @return a vector containing a fudged bid and a qty to trade with
 ##' @author richie
 ##' @export
-get_bid <- function(venue, ticker, spread=20) {
+get_bid <- function(venue, ticker, spread=100) {
     q <- get_quote(venue, ticker) %>% parse_response()
     bid <- q$bid
     ask <- q$ask
     last <- q$last
     print(c(bid, ask, last))
-    if(all(is.null(bid) & is.null(ask) & is.null(last))) {
+    while(all(is.null(bid) & is.null(ask) & is.null(last))) {
+        browser()
+        message("not even a last price")
         q2 <- get_quote(venue, ticker)
         qp <- parse_response(q2)
         bid <- qp$bid
@@ -120,7 +122,7 @@ get_bid <- function(venue, ticker, spread=20) {
         buyprice <- bid
         sellprice <- bid + floor(spread / 4)
     }
-    else {
+    if(!is.null(bid) & !is.null(ask)) {
         message("both present")
         spread <- ask - bid
         buyprice <- bid + floor(spread / 4)
@@ -620,11 +622,14 @@ update_position <- function(position, apikey) {
     if(length(allord$orders)>0) {
         ords <- allord$orders %>%
             group_by(direction) %>%
-            summarise(filled=sum(totalFilled))
+            summarise(filled=sum(totalFilled), price=sum(price, na.rm=TRUE))
         filled <- ords$filled
+        price <- ords$price
+        cash <- price[2] - price[1]
         new_pos <- position
         new_pos@total_sold <-filled[2] 
         new_pos@total_bought <- filled[1]
+        new_pos@cash <- cash
         new_pos@fills <- allord$orders$fills
         open_ord <- filter(allord$orders, isTRUE(open))
         new_pos@open_orders <- open_ord
@@ -652,24 +657,24 @@ clear_position <- function(level, position, apikey, tolerance) {
             compsell <- 0
             bids <- get_bid(venue, stock)
             pricesell <- bids[2] + 1
+            
+            message("clearing position at  ", pricesell, "\n")
+            sell <- create_order(account, venue, stock, price=pricesell, qty=sumpos$position, direction="sell", ordertype="ioc")
+            sellp <-
+                place_order(venue, stock,
+                            body=sell, apikey=apikey) %>%
+                parse_response()
+            if(sellp$totalFilled==0) {
+                compsell <- compsell + 1
             }
-        message("clearing position at  ", pricesell, "\n")
-        sell <- create_order(account, venue, stock, price=pricesell, qty=sumpos$position, direction="sell", ordertype="ioc")
-                sellp <-
-                    place_order(venue, stock,
-                                body=sell, apikey=apikey) %>%
-                    parse_response()
-                if(sellp$totalFilled==0) {
-                    compsell <- compsell + 1
-                }
             position <- update_position(position, apikey)
             sumpos <- print(position)
             print(position)
         }
-
+    
         if(sumpos$position<0) {
             compbuy <- 0
-             bidsdf <- get_bid(venue, stock)
+            bidsdf <- get_bid(venue, stock)
             pricebuy <- bidsdf[1] + 1
             message("clearing position at  ", pricebuy, "\n")
             buy <- create_order(account, venue, stock, price=pricebuy, qty=(sumpos$position)*-1, direction="buy", ordertype="ioc")
@@ -684,5 +689,6 @@ clear_position <- function(level, position, apikey, tolerance) {
             sumpos <- print(position)
             print(position)
         }
+    }
     return(position)
 }
