@@ -1,5 +1,4 @@
 #tiny change
-library(httr)
 base_gm <- "https://www.stockfighter.io/gm/"
 ##' Start a level by name
 ##' See above
@@ -12,7 +11,7 @@ start_level <- function(level="first_steps", ...) {
     base_gm <- "https://www.stockfighter.io/gm/levels/"
     url <- paste(base_gm, "/",level, sep="")
     res <- httr::POST(url,
-                      add_headers("X-Starfighter-Authorization"=apikey),
+                      httr::add_headers("X-Starfighter-Authorization"=apikey),
                       ...)
 }
 ##' Change a level in some form (stop, resume etc)
@@ -30,10 +29,10 @@ change_instance <- function(level, action) {
     print(instance_id)
     print(url)
     if(action %in% c("stop", "resume")) {
-        res <- httr::POST(url=url, add_headers("X-Starfighter-Authorization"=apikey), verbose())
+        res <- httr::POST(url=url, httr::add_headers("X-Starfighter-Authorization"=apikey), verbose())
     }
     else {
-        res <- httr::GET(url, add_headers("X-Starfighter-Authorization"=apikey), verbose())}
+        res <- httr::GET(url, httr::add_headers("X-Starfighter-Authorization"=apikey), verbose())}
     res
 }
 ##' Get some information relating to the level. This often includes information to make things easier
@@ -53,7 +52,9 @@ level_status <- function(level, ...)  {
         instance <- content(level)[["instanceId"]]
     }
     url <- paste(base_gm, "instances/", instance, sep="")
-    res <- httr::GET(url, add_headers("X-Starfighter-Authorization"=apikey), ...)
+    res <- httr::GET(url,
+                     httr::add_headers(
+                         "X-Starfighter-Authorization"=apikey), ...)
     
 }
 ##' get the level id from a level object
