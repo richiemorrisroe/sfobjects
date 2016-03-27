@@ -1,6 +1,4 @@
 #tinychange
-require(httr)
-require(dplyr)
 ##' Convert factor variable to numeric
 ##'
 ##' Mostly because I dislike StringsAsFactors=FALSE
@@ -48,8 +46,7 @@ parse_quote <- function(quote) {
 ## lasttrade <- get_component(component="lastTrade")
 ## quotetime <- get_component(component="quoteTime")
 
-##man i really want this to work
-##it doesn't though, suggesting I'm missing something subtle
+##got this to work
 ##' repeat a function n times, storing the results in a list
 ##'
 ##' Should really generalise this to also allow for while loops, as it would simplify the monitor function greatly
@@ -60,10 +57,13 @@ parse_quote <- function(quote) {
 ##' @return a list containing the results of repeatedly evaluating call. 
 ##' @author richie
 ##' @export
-repeat_call <- function(times, call, sleep=10) {
+repeat_call <- function(times, call, sleep=0,print=FALSE ) {
     reslist <- vector(mode="list", length=times)
     fun <- match.fun(call)
     for(i in 1:times) {
+        if(print) {
+            print(i)
+        }
         reslist[[i]] <- fun()
         if(sleep) {
             Sys.sleep(sleep)
@@ -81,9 +81,9 @@ repeat_call <- function(times, call, sleep=10) {
 as.fnumeric <- function(x) {
     as.numeric(as.character(x))
 }
-##' Get the "current" asking price for a stock
+##' Return a bid price and ask price derived from get_quote, regardless
 ##'
-##' This is overcomplicated and conflates the price to pay with 
+##' messages when it has a problem
 ##' @title get_price
 ##' @param venue 
 ##' @param ticker 
@@ -91,15 +91,15 @@ as.fnumeric <- function(x) {
 ##' @return a vector containing a fudged bid and a qty to trade with
 ##' @author richie
 ##' @export
-get_bid <- function(venue, ticker, spread=100) {
+get_bid <- function(venue, ticker, spread=40) {
     q <- get_quote(venue, ticker) %>% parse_response()
     bid <- q$bid
     ask <- q$ask
     last <- q$last
     print(c(bid, ask, last))
     while(all(is.null(bid) & is.null(ask) & is.null(last))) {
-        browser()
         message("not even a last price")
+        Sys.sleep(2)
         q2 <- get_quote(venue, ticker)
         qp <- parse_response(q2)
         bid <- qp$bid
@@ -128,32 +128,9 @@ get_bid <- function(venue, ticker, spread=100) {
         buyprice <- bid + floor(spread / 4)
         sellprice <- ask - floor(spread / 4)
     }
-    if(is.null(buyprice) & is.null(sellprice)) {
-        browser()
-    }
+
     return(c(buyprice, sellprice))
 }
-##' More level specific functions!
-##' See above
-##' @title get_first_real_price
-##' @param venue venue
-##' @param stock ticker
-##' @param fudge how much to increase the price by
-##' @return a suggested bid and qty. 
-##' @author richie
-get_first_real_price <- function (venue, stock, fudge=0) {
-    fudged_bid <- NA
-    qty <- NA
-    while(is.na(fudged_bid) | is.na(qty)) {
-        orderinfo <- get_bid(content(get_quote(venue, stock)))
-        fudged_bid <- orderinfo[1]
-        qty <- orderinfo[2]
-    }
-    res <- c(fudged_bid, qty)
-}
-        
-
-
 response_to_df <- function(parsed_response) {
     parsedmat <- do.call("rbind", parsed_response)
     parsed.df <- sapply(as.data.frame(parsedmat), unlist)
@@ -165,17 +142,6 @@ get_tickertape <- function(account, venue) {
     url <- paste(base_url_wss, account, "/venues/", venue, "/tickertape", sep="")
     res <- httr::GET(url, add_headers("X-Starfighter-Authorization"=apikey))
 }
-
-##' Calculate the spreads between bid and ask from an orderbook object
-##'
-##' Doesn't really work right now
-##' @title spreads.orderbook
-##' @param orderbook an orderbook object
-##' @return a data.frame containing the prices and differences between them
-##' @author richie
-
-
-        
 
 ##' An almost entirely unnecessary parsing function
 ##'
@@ -192,15 +158,6 @@ parse_ts <- function(order, timestamp) {
     df <- return(data.frame(ymdhms=myts, milli=as.numeric(millis)))
 
 }
-get_component <- function(level, component) {
-    levelcon <- parse_response(level)
-    component <- unlist(levelcon[[component]])
-    component
-}
-
-
-
-
 ##' Convert a list of quote objects to a dataframe
 ##'
 ##' Lists of quote objects are returned by the monitor function. 
@@ -230,20 +187,12 @@ qlist_to_df <- function(quotelist) {
     ##                 last_trade=lubridate::ymd_hms(lastTrade),
     ##                 quote_time=lubridate::ymd_hms(quoteTime))
     resdf
-                    
-                                 
 }
-##' Convert a quote object to a vector
-##'
-##' See above
-##' @title as.vector.quote
-##' @param quote an object of class quote
-##' @return a vector containing the slots of the quote object
-##' @author richie
+
 
 ##' An attempt at using the websocket endpoints.
 ##'
-##' it appears that httr and curl don't support wss endpoints. I suspect that with some care, an upgrade request can be sent as per the spec (which allows for a HTTP response). This turned out to be true, I can get the server upgrade response, but I can't seem to parse it correctly (yet)
+##' it appears that httr and curl don't support wss endpoints. I suspect that with some care, an upgrade request can be sent as per the spec (which allows for a HTTP response). This turned out to be true, I can get the server upgrade response, but I can't seem to parse it correctly (yet). This attempt was doomed, but I can call out to an external program and get the data, which is better than nothing
 
 ##' @title get_tickertape
 ##' @param account 
@@ -264,6 +213,7 @@ get_tickertape <- function(account, venue, ...) {
 ##' Monitor a stockfighter level
 ##'
 ##' Runs a while loop around a particular level
+##' should probably generalise and re-factor this
 ##' @title monitor
 ##' @param venue 
 ##' @param stock 
@@ -296,7 +246,6 @@ monitor <- function(venue, stock, level=level, name=name) {
             quotelist[[i]] <- quote
             cat("iteration at ", i, "\n")
             i <- i + 1
-            ## print(orders[length(orders)])
             ok <- content(orders[[length(orders)]])$ok
             end_time <- Sys.time()
             ## cat("time taken ", end_time-new_time, "\n")
@@ -374,20 +323,22 @@ market_make <- function(level, ordertype="limit", qty=NULL) {
     reslist <- list()
 
     
+    
+}
+
+level_3_stats <- function(level) {
     stat <- level_status(level=level)
     sp <- stat %>% parse_response()
     if(!is.null(sp$flash)) {
     nums <- stringr::str_extract_all(unlist(stat[["flash"]]), "\\$[0-9]+")
     cash <- nums[[1]][1]
     NAV <-  nums[[1]][2]
+    stats <- c(cash=cash, NAV=NAV)
+    stats
     }
-}
-stupid_loop <- function(ordlist) {
-    reslist <- vector(mode="list", length=length(ordlist))
-    for(i in 1:length(ordlist)) {
-        reslist[[i]] <- as.data.frame.orderbook(ordlist[[i]])
+    else {
+        return(NA)
     }
-    reslist
 }
 ##' Take a series of calls to get_orderbook, and return the results as a df
 ##'
@@ -456,7 +407,7 @@ get_spreads <- function(venue, stock, spread) {
     }
     return(ob)
 }
-##' Some bullshit
+##' Places a pair of buy and sell orders
 ##'
 ##' More bullshit
 ##' @title trade
@@ -540,7 +491,7 @@ place_many_orders <- function(account, venue, stock,
                               price, qty, direction,
                               ordertype, split) {
     minqty <- floor(qty/split)
-    prices <- ifelse(rnorm(1)>0, price + 5, price -5)
+    ## prices <- ifelse(rnorm(1)>0, price + 5, price - 5),
     rep(prices, times=split)
     ord <- create_order(account=account,
                         venue = venue,
@@ -708,25 +659,33 @@ bid_ask_ratio <- function(ord) {
     reslist
     
 }
-##' return the spread from an orderbook if available, otherwise NA
-##'
-##' Also return summary information
-##' @title orderbook
-##' @param ord 
-##' @return a vector containing named components
-##' @author richie
-##' @export 
-spread <- function(ord) {
-    bidsum <- summary(ord, type="bids")
-    asksum <- summary(ord, type="asks")
-    bbid <- max(bidsum$bids, na.rm=TRUE)
-    total_bqty <- sum(bidsum$qty, na.rm=TRUE)
-    bask <- min(asksum$price, na.rm=TRUE)
-    if(!is.na(bask)) {
-        bask_qty <- sum(asksum[price==bask,])
+get_all_tickers <- function(venues) {
+    myticks <- list()
+    for(i in 1:nrow(venues$venues)) {
+        venues <- venuelist$venues$venue
+        myticks[[i]] <- get_tickers(venues[i])
     }
-    total_aqty <- sum(asksum$qty, na.rm=TRUE)
-    spread <- bask - bid
-    res <- c(bid=bbid, ask=bask, spread=spread, total_bid_qty=total_bqty, total_ask_qty=total_aqty)
-    res
+    myticks
+}
+timed <- function(f) {
+    function(f, ...) {
+    start <- Sys.time()
+    res <- force(f)
+    end <- Sys.time()
+    return(list(time=end-start, res))
+    }
+}
+make_order <- function(level, price, qty, direction, type, apikey) {
+    account <- account(level)
+    venue <- venue(level)
+    stock <- ticker(level)
+    creat <- create_order(account=account,
+                          venue=venue,
+                          stock=stock,
+                          price=price,
+                          qty=qty,
+                          direction=direction,
+                          type=type)
+    place <- place_order(venue, stock, body=body, apikey=apikey)
+    return(place)
 }
