@@ -428,7 +428,7 @@ parse_orderlist <- function(orderlist, parallel=TRUE, data.frame=TRUE) {
 }
 ##' Get spreads and various orderbook related stuff
 ##'
-##' 
+##' This is fucking bullshit
 ##' @title get_spreads
 ##' @param venue 
 ##' @param stock 
@@ -691,4 +691,42 @@ clear_position <- function(level, position, apikey, tolerance) {
         }
     }
     return(position)
+}
+##' Honestly think I'll fold this into the summary function
+##'
+##' 
+##' @title bid_ask_ratio
+##' @param ord 
+##' @return a list containing the bids, asks and the relative qty between them
+##' @author richie
+bid_ask_ratio <- function(ord) {
+    bidsum <- summary(ord, type="bids")
+    asksum <- summary(ord, type="asks")
+    bid_to_ask_qty <- max(bidsum$cum_qty) / max(asksum$cum_qty)
+    reslist <- list(b2a_qty=bid_to_ask_qty,
+                    bids=bidsum, asks=asksum)
+    reslist
+    
+}
+##' return the spread from an orderbook if available, otherwise NA
+##'
+##' Also return summary information
+##' @title orderbook
+##' @param ord 
+##' @return a vector containing named components
+##' @author richie
+##' @export 
+spread <- function(ord) {
+    bidsum <- summary(ord, type="bids")
+    asksum <- summary(ord, type="asks")
+    bbid <- max(bidsum$bids, na.rm=TRUE)
+    total_bqty <- sum(bidsum$qty, na.rm=TRUE)
+    bask <- min(asksum$price, na.rm=TRUE)
+    if(!is.na(bask)) {
+        bask_qty <- sum(asksum[price==bask,])
+    }
+    total_aqty <- sum(asksum$qty, na.rm=TRUE)
+    spread <- bask - bid
+    res <- c(bid=bbid, ask=bask, spread=spread, total_bid_qty=total_bqty, total_ask_qty=total_aqty)
+    res
 }
