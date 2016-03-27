@@ -23,6 +23,39 @@ setMethod("account", signature("trades"),
 setGeneric("account", function(object) {
   standardGeneric("account")
 })
+##' Generic function for extracting venue from an object inheriting from trades
+##'
+##' See above
+##' @title venue
+##' @param object 
+##' @return a character string containing the venue
+##' @author richie
+##' @export
+venue <- function(object) {
+    object@venues
+}
+setMethod("venue", signature("trades"),
+          def = venue)
+setGeneric("venue", function (object) {
+    standardGeneric("venue")
+})
+
+##' A ticker method for objects inheriting from trades
+##'
+##' Currently this will fail to be useful if there are multiple tickers on the level. This has not happened yet, but probably will soon
+##' @title ticker
+##' @param object an object inheriting from class trades
+##' @return a length one character vector containing the stock(s) traded on the level
+##' @author richie
+##' @export
+ticker <- function(object) {
+    object@tickers
+}
+setMethod("ticker", signature("trades"),
+          def = ticker)
+setGeneric("ticker", function (object) {
+    standardGeneric("ticker")
+})
 ##' Function to extract the current asks from an orderbook object
 ##'
 ##' See above
@@ -65,38 +98,8 @@ get_asks <- function(object) {
 }
 ## setMethod("asks", signature("orderbook"),
 ##           def = asks)
-##' Generic function for extracting venue from an object inheriting from trades
-##'
-##' See above
-##' @title venue
-##' @param object 
-##' @return a character string containing the venue
-##' @author richie
-##' @export
-venue <- function(object) {
-    object@venues
-}
-setMethod("venue", signature("trades"),
-          def = venue)
-setGeneric("venue", function (object) {
-    standardGeneric("venue")
-})
-##' A ticker method for objects inheriting from trades
-##'
-##' Currently this will fail to be useful if there are multiple tickers on the level. This has not happened yet, but probably will soon
-##' @title ticker
-##' @param object an object inheriting from class trades
-##' @return a length one character vector containing the stock(s) traded on the level
-##' @author richie
-##' @export
-ticker <- function(object) {
-    object@tickers
-}
-setMethod("ticker", signature("trades"),
-          def = ticker)
-setGeneric("ticker", function (object) {
-    standardGeneric("ticker")
-})
+
+
 
 setClass(Class="level",
                   slots = list(id="integer",
@@ -198,13 +201,6 @@ setClass(Class="order-response",
                                 fills = "list",
                                 total_filled = "integer",
                                 open = "logical"), contains="order")
-setClass(Class="order-buy",
-         representation=list(),
-         contains = "order"
-         )
-setClass(Class="order-sell",
-         representation=list(),
-         contains="order")
 setClass(Class="Position", slots = list(
                                total_sold = "integer",
                                total_bought = "integer",
@@ -292,6 +288,7 @@ df_or_null <- function(order, component) {
 ##' @author richie
 ##' @export
 orderbook <- function(order) {
+    ###ugh, this is horrible. reassignment to the same name?
     order <- df_or_null(order, "bids")
     order <- df_or_null(order, "asks")
     if(is.null(order$error)) {
@@ -309,8 +306,6 @@ orderbook <- function(order) {
     orderbook
     }
 }
-##' @export
-setClass("orderbook-list", contains="orderbook")
 ##' An as.data.frame method for class orderbook
 ##'
 ##' See above
@@ -330,18 +325,6 @@ as.data.frame.orderbook <- function (x, row.names = NULL, optional = FALSE, ...)
     times <- rep(time, nrow(bidask))
     bidasktime <- cbind(times, bidask)
     dfs <- as.data.frame(bidasktime)
-                         
-    ## dfnames <- c("price", "qty", "isBuy")
-    ## ## browser()
-    ## fullnames <- c(ordslots, dfnames)
-    ## ordslots2 <- ordslots[!(ordslots %in% c("bids", "asks"))]
-    ## names(dfs) <- dfnames
-    
-    ## for(i in 1:length(ordslots2)) {
-    ##     ## browser()
-    ##     current_slot <- rep(slot(orderbook, ordslots2[i]), times=nrow(dfs))
-    ##     dfs[,ordslots2[i]] <- current_slot
-    ## }
     dfs
 }
 setMethod("as.data.frame",
@@ -431,7 +414,7 @@ setGeneric("show", def=show.quote)
 ##' @title summary.orderbook
 ##' @param object 
 ##' @param ... 
-##' @return printed representation
+##' @return a dataframe containing prices and cumulative_qty for either bids or asks
 ##' @author richie
 ##' @export
 summary.orderbook <- function(object, type=c("bids", "asks")) {
@@ -471,7 +454,7 @@ setMethod("summary",
 ##' @export
 bids.orderbook <- function(orderbook) {
     bids <- orderbook@bids
-    t2 <-   bids %>% summarise(value=sum(price), qty=sum(qty), rows=n(), std=std(price))
+    t2 <-   bids %>% summarise(value=sum(price), qty=sum(qty), rows=n(), std=sd(price))
 }
 ##' A print method for position objects
 ##'
