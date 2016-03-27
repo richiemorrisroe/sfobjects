@@ -450,10 +450,10 @@ summary.orderbook <- function(object, type=c("bids", "asks")) {
     list(bids=bids2, asks=asks2,
          ratio=max(bids2$cum_qty) / max(asks2$cum_qty))
     if(type=="bids")
-        print(bids2)
+        return(bids2)
 
     else {
-        print(asks2)
+        return(asks2)
     }
     
 }
