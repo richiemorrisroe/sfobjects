@@ -293,7 +293,17 @@ cancel_orders <- function(orders, apikey) {
     }
     cancellist
 }
-cancel_old_orders <- function(orders, seconds=10) {
+##' Cancel a set of open orders
+##'
+##' Cancel limit orders older than seconds
+##' @title cancel_old_olders
+##' @param orders either a response or a dataframe containing orders
+##' @param seconds if order$ts>seconds, cancel
+##' @param apikey authorisation
+##' @return 
+##' @author richie
+##' @export
+cancel_old_orders <- function(orders, seconds=10, apikey=apikey) {
     if(class(orders)=="response") {
         ordersp <- parse_response(orders)
         orderdf <- ordersp$orders
@@ -301,9 +311,18 @@ cancel_old_orders <- function(orders, seconds=10) {
     if(is.data.frame(orders)) {
         orderdf <- orders
     }
+    if(is.list(orders)) {
+        orderdf <- orders$orders
+    }
     oldord <-
         filter(orderdf, open==TRUE) %>%
         filter(ts<(lubridate::ymd_hms(Sys.time()) - lubridate::seconds(x=seconds)))
-    cancels <- cancel_orders(oldord)
+    if(nrow(oldord)!=0) {
+    cancels <- cancel_orders(oldord, apikey=apikey)
+    cancels
+    }
+    else {
+        cancels <- NA
+    }
     cancels
 }
