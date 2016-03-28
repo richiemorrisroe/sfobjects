@@ -157,37 +157,6 @@ get_spreads <- function(venue, stock, spread) {
     return(ob)
 }
 
-##' Get spreads and various orderbook related stuff
-##'
-##' This is fucking bullshit
-##' @title get_spreads
-##' @param venue 
-##' @param stock 
-##' @return a list containing an orderbook, the spread and the minqty available 
-##' @author richie
-##' @export
-get_spreads <- function(venue, stock, spread) {
-    bids <- data.frame(price=NA, qty=NA, isBuy=NA)
-    asks <- data.frame(price=NA, qty=NA, isBuy=NA)
-    nulls <- -1
-    spread <- NA
-    while(is.na(spread)) {
-        nulls <- nulls + 1
-        cat("There have been ", nulls, " nulls", "\n")
-        orderbook <- get_orderbook(venue=venue, stock=stock) %>%
-            parse_response() %>%
-            orderbook()
-        bids <- orderbook@bids
-        asks <- orderbook@asks
-        spread <- min(asks$price, na.rm=TRUE)- max(bids$price, na.rm=TRUE)
-        bidqty <- bids$qty
-        askqty <- asks$qty
-        qty <- min(min(bidqty), min(askqty), na.rm=TRUE)
-        ob <- list(orderbook=orderbook, spread=spread, minqty=qty)
-    }
-    return(ob)
-}
-
 ##' Some stuff
 ##'
 ##' Some more stuff
@@ -269,7 +238,7 @@ clear_position <- function(level, position, apikey, tolerance) {
             pricesell <- bids[2] - 1
             
             message("clearing position at  ", pricesell, "\n")
-            sellp <- make_order(level, price=pricesell, qty=sumpos$position, ordertype="ioc") %>% parse_response()
+            sellp <- make_order(level, price=pricesell, direction="sell", qty=sumpos$position, ordertype="ioc", apikey=apikey) %>% parse_response()
             if(sellp$totalFilled==0) {
                 compsell <- compsell - 1
             }
@@ -281,7 +250,7 @@ clear_position <- function(level, position, apikey, tolerance) {
             bidsdf <- get_bid(venue, stock)
             pricebuy <- bidsdf[1] + 1
             message("clearing position at  ", pricebuy, "\n")
-            buyp <- make_order(level, price=pricebuy, direction="buy", qty=(sumpos$position)*-1, ordertype="ioc")
+            buyp <- make_order(level, price=pricebuy, direction="buy", qty=(sumpos$position)*-1, ordertype="ioc", apikey=apikey) %>% parse_response()
                 if(buyp$totalFilled==0) {
                     compbuy <- compbuy + 1
                 }
@@ -303,8 +272,8 @@ make_order <- function(level, price, qty, direction, ordertype, apikey) {
                           price=price,
                           qty=qty,
                           direction=direction,
-                          ordertype=type)
-    place <- place_order(venue, stock, body=body, apikey=apikey)
+                          ordertype=ordertype)
+    place <- place_order(venue, stock, body=creat, apikey=apikey)
     return(place)
 }
 ##' Stuff
@@ -315,11 +284,26 @@ make_order <- function(level, price, qty, direction, ordertype, apikey) {
 ##' @return void
 ##' @author richie
 ##' @export
-cancel_orders <- function(orders) {
+cancel_orders <- function(orders, apikey) {
+    cancellist <- vector(mode="list", length=nrow(orders))
     venue <- unique(orders$venue)
     stock <- unique(orders$symbol)
     for(i in 1:nrow(orders)) {
-        cancel_order(orders$id[i], venue=venue, stock=stock)
+        cancellist[[i]] <- cancel_order(orders$id[i], venue=venue, stock=stock, apikey=apikey)
     }
+    cancellist
 }
-    
+cancel_old_orders <- function(orders, seconds=10) {
+    if(class(orders)=="response") {
+        ordersp <- parse_response(orders)
+        orderdf <- ordersp$orders
+    }
+    if(is.data.frame(orders)) {
+        orderdf <- orders
+    }
+    oldord <-
+        filter(orderdf, open==TRUE) %>%
+        filter(ts<(lubridate::ymd_hms(Sys.time()) - lubridate::seconds(x=seconds)))
+    cancels <- cancel_orders(oldord)
+    cancels
+}
