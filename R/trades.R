@@ -229,7 +229,7 @@ update_position <- function(position, apikey) {
 ##' @return a new position object
 ##' @author richie
 ##' @export
-clear_position <- function(level, position, apikey, tolerance) {
+clear_position <- function(level, position, apikey, tolerance, spread) {
     account <- account(level)
     venue <- venue(level)
     stock <- ticker(level)
@@ -237,7 +237,7 @@ clear_position <- function(level, position, apikey, tolerance) {
     while(abs(sumpos$position) >= tolerance) {
         if(sumpos$position > 0) {
             compsell <- 0
-            bids <- get_bid(venue, stock)
+            bids <- get_spreads(venue, stock, position, spread)
             pricesell <- bids[2] - 1
             
             message("clearing position at  ", pricesell, "\n")
@@ -250,8 +250,8 @@ clear_position <- function(level, position, apikey, tolerance) {
     
         if(sumpos$position<0) {
             compbuy <- 0
-            bidsdf <- get_bid(venue, stock)
-            pricebuy <- bidsdf[1] + 1
+            bidsdf <- get_spreads(venue, stock, position, spread)
+            pricebuy <- bidsdf[1] + compbuy
             message("clearing position at  ", pricebuy, "\n")
             buyp <- make_order(level, price=pricebuy, direction="buy", qty=(sumpos$position)*-1, ordertype="ioc", apikey=apikey) %>% parse_response()
                 if(buyp$totalFilled==0) {
