@@ -241,7 +241,7 @@ clear_position <- function(level, position, apikey, tolerance) {
             pricesell <- bids[2] - 1
             
             message("clearing position at  ", pricesell, "\n")
-            sellp <- make_order(level, price=pricesell, direction="sell", qty=sumpos$position, ordertype="market", apikey=apikey) %>% parse_response()
+            sellp <- make_order(level, price=pricesell, direction="sell", qty=sumpos$position, ordertype="ioc", apikey=apikey) %>% parse_response()
             if(sellp$totalFilled==0) {
                 compsell <- compsell - 1
             }
@@ -253,7 +253,7 @@ clear_position <- function(level, position, apikey, tolerance) {
             bidsdf <- get_bid(venue, stock)
             pricebuy <- bidsdf[1] + 1
             message("clearing position at  ", pricebuy, "\n")
-            buyp <- make_order(level, price=pricebuy, direction="buy", qty=(sumpos$position)*-1, ordertype="market", apikey=apikey) %>% parse_response()
+            buyp <- make_order(level, price=pricebuy, direction="buy", qty=(sumpos$position)*-1, ordertype="ioc", apikey=apikey) %>% parse_response()
                 if(buyp$totalFilled==0) {
                     compbuy <- compbuy + 1
                 }
