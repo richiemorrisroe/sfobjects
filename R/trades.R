@@ -1,14 +1,16 @@
 ##' Places a pair of buy and sell orders
 ##'
-##' More bullshit
+##' This is actually OK now. It works, and doesn't have too much spaghetti code. 
 ##' @title trade
-##' @param orderbook an orderbook object
+##' @param level 
+##' @param position 
 ##' @param qty the qty to trade
+##' @param orderbook an orderbook object
 ##' @param prices the price to trade at
 ##' @return a list containing the buy and sell trades, as well as an orderbook
 ##' @author richie
 ##' @export
-trade <- function(level=NULL, qty=NULL) {
+trade <- function(level, position, qty) {
     account <- account(level)
     venue <- venue(level)
     stock <- ticker(level)
@@ -59,7 +61,7 @@ place_many_orders <- function(account, venue, stock,
                               ordertype, split) {
     minqty <- floor(qty/split)
     ## prices <- ifelse(rnorm(1)>0, price + 5, price - 5),
-    rep(prices, times=split)
+    rep(price, times=split)
     ord <- create_order(account=account,
                         venue = venue,
                         stock = stock,
@@ -135,26 +137,12 @@ get_bid <- function(venue, ticker, spread=40) {
 ##' @return a list containing an orderbook, the spread and the minqty available 
 ##' @author richie
 ##' @export
-get_spreads <- function(venue, stock, spread) {
-    bids <- data.frame(price=NA, qty=NA, isBuy=NA)
-    asks <- data.frame(price=NA, qty=NA, isBuy=NA)
-    nulls <- -1
-    spread <- NA
-    while(is.na(spread)) {
-        nulls <- nulls + 1
-        cat("There have been ", nulls, " nulls", "\n")
-        orderbook <- get_orderbook(venue=venue, stock=stock) %>%
-            parse_response() %>%
-            orderbook()
-        bids <- orderbook@bids
-        asks <- orderbook@asks
-        spread <- min(asks$price, na.rm=TRUE)- max(bids$price, na.rm=TRUE)
-        bidqty <- bids$qty
-        askqty <- asks$qty
-        qty <- min(min(bidqty), min(askqty), na.rm=TRUE)
-        ob <- list(orderbook=orderbook, spread=spread, minqty=qty)
-    }
-    return(ob)
+get_spreads <- function(venue, stock, position) {
+    ord <- as_orderbook(venue, stock)
+    q <- as_quote(venue, stock)
+    bids <- summary(ord, type="bids")
+    asks <- summary(ord, type="asks")
+    book <- list(bids=bids, asks=asks)
 }
 
 ##' Some stuff
@@ -238,7 +226,7 @@ clear_position <- function(level, position, apikey, tolerance) {
             pricesell <- bids[2] - 1
             
             message("clearing position at  ", pricesell, "\n")
-            sellp <- make_order(level, price=pricesell, direction="sell", qty=sumpos$position, ordertype="ioc", apikey=apikey) %>% parse_response()
+            sellp <- make_order(level, price=pricesell, direction="sell", qty=sumpos$position, ordertype="market", apikey=apikey) %>% parse_response()
             if(sellp$totalFilled==0) {
                 compsell <- compsell - 1
             }
@@ -250,7 +238,7 @@ clear_position <- function(level, position, apikey, tolerance) {
             bidsdf <- get_bid(venue, stock)
             pricebuy <- bidsdf[1] + 1
             message("clearing position at  ", pricebuy, "\n")
-            buyp <- make_order(level, price=pricebuy, direction="buy", qty=(sumpos$position)*-1, ordertype="ioc", apikey=apikey) %>% parse_response()
+            buyp <- make_order(level, price=pricebuy, direction="buy", qty=(sumpos$position)*-1, ordertype="market", apikey=apikey) %>% parse_response()
                 if(buyp$totalFilled==0) {
                     compbuy <- compbuy + 1
                 }
@@ -325,4 +313,18 @@ cancel_old_orders <- function(orders, seconds=10, apikey=apikey) {
         cancels <- NA
     }
     cancels
+}
+
+test_parallel <- function(venue, stock) {
+    cl <- parallel::makeForkCluster(nnodes = 6)
+            listvars <- rep(list(c(venue, stock)), 6)
+            orders <- parallel::parLapply(cl, listvars, function(x) as_orderbook(venue = x[1], 
+                                                                                  stock = x[2]))
+}
+
+update_orders <- function(orders) {
+    ids <- lapply(orders, "[[", "id")
+    venue <- orders[1][["venue"]]
+    stock <- orders[1][["stock"]]
+    status <- sapply(ids, function(x) get_order_status(x, venue, stock))
 }
