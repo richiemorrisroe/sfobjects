@@ -159,8 +159,8 @@ setClass("quote",
                     askDepth="integer",
                     last="integer",
                     lastSize="integer",
-                    lastTrade="character",
-                    quoteTime="character"),
+                    lastTrade="POSIXct",
+                    quoteTime="POSIXct"),
          prototype=prototype(ok=NA,
                     venue=NA_character_,
                     symbol=NA_character_,
@@ -171,8 +171,8 @@ setClass("quote",
                     askDepth=NA_integer_,
                     last=NA_integer_,
                     lastSize=NA_integer_,
-                    lastTrade=NA_character_,
-                    quoteTime=NA_character_),
+                    lastTrade=NA_real_,
+                    quoteTime=NA_real_),
          contains="trades")
 setMethod("==",
     signature(e1 = "quote", e2 = "quote"),
@@ -201,6 +201,31 @@ setClass(Class="order-response",
                                 fills = "list",
                                 total_filled = "integer",
                                 open = "logical"), contains="order")
+##' create order-response object
+##'
+##' returns the object
+##' @title order
+##' @param response 
+##' @return an order-response object
+##' @author richie
+### @export
+order <- function(response) {
+    ord <- new("order-response",
+               ok=response$ok,
+               account=response$account,
+               venues=response$venue,
+               tickers=response$symbol,
+               ordertype=response$ordertype,
+               price=response$price,
+               qty=response$qty,
+               id=response$id,
+               ts=response$ts,
+               fills=response$fills,
+               total_filled=response$totalFilled,
+               open=response$open)
+    return(ord)
+}
+               
 setClass(Class="Position", slots = list(
                                total_sold = "integer",
                                total_bought = "integer",
@@ -342,7 +367,7 @@ new_quote <- function(quote) {
     q <- new("quote")
     quote2 <- lapply(quote, function(x) ifelse(is.null(x), NA, x))
     q@ok <- ifelse(!is.null(quote2$ok), quote2$ok, q@ok)
-    q@venues <- ifelse(!is.null(quote2$venues), quote2$venue, q@venue) 
+    q@venues <- ifelse(!is.null(quote2$venue), quote2$venue, q@venue) 
     q@tickers <- ifelse(!is.null(quote2$symbol), quote2$symbol, q@symbol) 
     q@bid <- ifelse(!is.null(quote2$bid), quote2$bid, q@bid)
     q@ask <- ifelse(!is.null(quote2$ask), quote2$ask, q@ask)
@@ -352,8 +377,12 @@ new_quote <- function(quote) {
     q@askDepth <- ifelse(!is.null(quote2$askDepth), quote2$askDepth, q@askDepth)
     q@last <- ifelse(!is.null(quote2$last), quote2$last, q@last)
     q@lastSize <- ifelse(!is.null(quote2$lastSize), quote2$lastSize, q@lastSize)
-    q@lastTrade <- ifelse(!is.null(quote2$lastTrade), quote2$lastTrade, q@lastTrade)
-    q@quoteTime <- ifelse(!is.null(quote2$quoteTime), quote2$quoteTime, q@quoteTime)
+    q@lastTrade <- ifelse(!is.null(quote2$lastTrade),
+                          lubridate::ymd_hms(quote2$lastTrade),
+                          lubridate::ymd_hms(q@lastTrade))
+    q@quoteTime <- ifelse(!is.null(quote2$quoteTime),
+                          lubridate::ymd_hms(quote2$quoteTime),
+                          lubridate::ymd_hms(q@quoteTime))
     q
 }
 ##' An as.vector method for quote
@@ -492,3 +521,18 @@ as_orderbook <- function(venue, stock) {
         parse_response() %>%
         orderbook()
 }
+##' get a quote and return a quote object
+##'
+##' wraps the get_quote, parse_response and new_quote functions
+##' @title as_quote
+##' @param venue venue
+##' @param stock stock
+##' @return a quote object for the given venue/stock
+##' @author richie
+##' @export
+as_quote <- function(venue, stock) {
+    q <- get_quote(venue, stock)
+    qp <- parse_response(q)
+    qq <- new_quote(qp)
+}
+                                       
