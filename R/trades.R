@@ -15,7 +15,7 @@ trade <- function(level, position, qty) {
     venue <- venue(level)
     stock <- ticker(level)
     qty <- qty
-    prices <- get_bid(venue, stock)
+    prices <- get_spreads(venue, stock, position)
     message("buying at ", prices[1], "\n",
             "Selling at ", prices[2], "\n")
     directions <- c("buy", "sell")
@@ -142,7 +142,22 @@ get_spreads <- function(venue, stock, position) {
     q <- as_quote(venue, stock)
     bids <- summary(ord, type="bids")
     asks <- summary(ord, type="asks")
-    book <- list(bids=bids, asks=asks)
+    book <- list(bids=bids, asks=asks, quote=quote)
+    pos <- position@current_position
+    if(pos > 0) {
+        bid <- median(bids$price) - 1
+        ask <- min(asks$price) - 10
+        res <- c(bid, ask)
+    }
+    if(pos < 0) {
+        ask <- median(asks$price) + 1
+        bid <- min(bids$price) + 1
+        res <- c(bid, ask)
+    }
+    if(pos==0) {
+        res <- get_bid(venue, stock, spread=40)
+    }
+    res
 }
 
 ##' Some stuff
