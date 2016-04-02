@@ -10,12 +10,12 @@
 ##' @return a list containing the buy and sell trades, as well as an orderbook
 ##' @author richie
 ##' @export
-trade <- function(level, position, qty) {
+trade <- function(level, position, qty, spread) {
     account <- account(level)
     venue <- venue(level)
     stock <- ticker(level)
     qty <- qty
-    prices <- get_spreads(venue, stock, position)
+    prices <- get_spreads(venue, stock, position, spread)
     message("buying at ", prices[1], "\n",
             "Selling at ", prices[2], "\n")
     directions <- c("buy", "sell")
@@ -137,7 +137,7 @@ get_bid <- function(venue, ticker, spread=40) {
 ##' @return a list containing an orderbook, the spread and the minqty available 
 ##' @author richie
 ##' @export
-get_spreads <- function(venue, stock, position) {
+get_spreads <- function(venue, stock, position, spread) {
     ord <- as_orderbook(venue, stock)
     q <- as_quote(venue, stock)
     bids <- summary(ord, type="bids")
@@ -155,7 +155,7 @@ get_spreads <- function(venue, stock, position) {
         res <- c(bid, ask)
     }
     if(pos==0) {
-        res <- get_bid(venue, stock, spread=40)
+        res <- get_bid(venue, stock, spread=spread)
     }
     res
 }
