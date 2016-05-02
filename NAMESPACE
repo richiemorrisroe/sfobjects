@@ -2,6 +2,7 @@
 
 export(account)
 export(as.data.frame.orderbook)
+export(as.fnumeric)
 export(as.vector.quote)
 export(as_orderbook)
 export(as_quote)
@@ -39,3 +40,4 @@ export(ticker)
 export(trade)
 export(update_position)
 export(venue)
+export(wss_shell)

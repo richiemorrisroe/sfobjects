@@ -6,6 +6,7 @@
 ##' @param x a factor variable
 ##' @return a numeric variable
 ##' @author richie
+##'@export
 as.fnumeric <- function(x) {
     as.numeric(as.character(x))
 }
@@ -106,13 +107,13 @@ parse_ts <- function(order, timestamp) {
 qlist_to_df <- function(quotelist) {
     stopifnot(class(quotelist[[1]])=="quote")
     matrows <- length(quotelist)
-    matcols <- length(getSlots("quote"))
+    matcols <- length(slotNames(quotelist[[1]]))
     resmat <- matrix(data=NA, nrow=matrows, ncol=matcols)
     for(i in 1:length(quotelist)) {
         resmat[i,] <- as.vector.quote(quotelist[[i]])
     }
     resmat
-    colnames(resmat) <- names(getSlots("quote"))
+    colnames(resmat) <- slotNames(quotelist[[1]])
     resdf <- as.data.frame(resmat)
     ## resdf <- dplyr::mutate(resdf, ok=as.logical(ok),
     ##                 bid=as.fnumeric(bid),
@@ -420,6 +421,25 @@ timed <- function(f) {
     start <- Sys.time()
     res <- force(f)
     end <- Sys.time()
-    return(list(time=end-start, res))
+    res <- list(time=c(start, end), res)
     }
+}
+##' shell out to wss program to get either executions or tickertape
+##'
+##' Need to integrate this properly at some point
+##' @title wss_shell
+##' @param level the current level
+##' @param type either tickertape (quotes) or executions 
+##' @param location path for the wsclient executable
+##' @return nothing, called for side effects
+##' @author richie
+##'@export
+wss_shell <- function(level, type=c("tickertape", "executions"), location="./", ofile) {
+    account <- account(level)
+    venue <- venue(level)
+    stock <- ticker(level)
+    base_wss <-  "wss://api.stockfighter.io/ob/api/ws/"
+    full_url <- paste0(base_wss, account, "/venues/", venue, "/", type, "/", stock)
+    print(full_url)
+    system(paste0(location, "wsclient ", full_url, "> ", ofile, ".txt"),  wait=FALSE)
 }

@@ -3,7 +3,11 @@ setClass(Class="trades",
          slots=list(ok = "logical",
                     account = "character",
                     venues = "character",
-                    tickers = "character"))
+                    tickers = "character"),
+         prototype=list(ok=NA,
+                        account=NA_character_,
+                        venues=NA_character_,
+                        tickers=NA_character_))
 
 ##' A get account function for objects inheriting from the trade class
 ##'
@@ -27,7 +31,7 @@ setGeneric("account", function(object) {
 ##'
 ##' See above
 ##' @title venue
-##' @param object 
+##' @param object an object inheriting from class trades
 ##' @return a character string containing the venue
 ##' @author richie
 ##' @export
@@ -56,7 +60,7 @@ setMethod("ticker", signature("trades"),
 setGeneric("ticker", function (object) {
     standardGeneric("ticker")
 })
-##' Function to extract the current asks from an orderbook object
+##' Function to extract the current bids from an orderbook object
 ##'
 ##' See above
 ##' @title get_bids
@@ -115,7 +119,12 @@ setClass(Class="level",
 ##' @author richie
 ##' @export
 level <- function(response) {
-    resp <- parse_response(response)
+    if(class(response)=="response") {
+        resp <- parse_response(response)
+    }
+    else {
+        resp <- response
+    }
     if(resp$ok) {
     lev <- new("level", ok=resp$ok,
                  id=resp$instanceId,
@@ -142,14 +151,14 @@ setClass("orderbook",
          slots = list(ymdhms="POSIXt",
                       bids="data.frame",
                       asks="data.frame"), contains="trades")
-## setMethod("==",
-##     signature(e1 = "orderbook", e2="orderbook"),
-##     function (e1, e2)  {
-##         if(all(is.na(e1@bids) & is.na(e2@bids)))
-##         if(all.equal(e1@bids, e2@bids) &
-##            all.equal(e1@asks, e2@asks)) TRUE else FALSE
-##     }
-##     )
+setMethod("==",
+    signature(e1 = "orderbook", e2="orderbook"),
+    function (e1, e2)  {
+        if(all(is.na(e1@bids) & is.na(e2@bids)))
+        if(all.equal(e1@bids, e2@bids) &
+           all.equal(e1@asks, e2@asks)) TRUE else FALSE
+    }
+    )
 setClass("quote",
          slots=list(bid="integer",
                     ask="integer",
@@ -159,8 +168,8 @@ setClass("quote",
                     askDepth="integer",
                     last="integer",
                     lastSize="integer",
-                    lastTrade="numeric",
-                    quoteTime="numeric"),
+                    lastTrade="character",
+                    quoteTime="character"),
          prototype=prototype(ok=NA,
                     venue=NA_character_,
                     symbol=NA_character_,
@@ -171,8 +180,8 @@ setClass("quote",
                     askDepth=NA_integer_,
                     last=NA_integer_,
                     lastSize=NA_integer_,
-                    lastTrade=NA_real_,
-                    quoteTime=NA_real_),
+                    lastTrade=NA_character_,
+                    quoteTime=NA_character_),
          contains="trades")
 setMethod("==",
     signature(e1 = "quote", e2 = "quote"),
@@ -378,11 +387,14 @@ new_quote <- function(quote) {
     q@last <- ifelse(!is.null(quote2$last), quote2$last, q@last)
     q@lastSize <- ifelse(!is.null(quote2$lastSize), quote2$lastSize, q@lastSize)
     q@lastTrade <- ifelse(!is.null(quote2$lastTrade),
-                          lubridate::ymd_hms(quote2$lastTrade),
-                          lubridate::ymd_hms(q@lastTrade))
+                          (quote2$lastTrade),
+                          (q@lastTrade))
     q@quoteTime <- ifelse(!is.null(quote2$quoteTime),
-                          lubridate::ymd_hms(quote2$quoteTime),
-                          lubridate::ymd_hms(q@quoteTime))
+                          (quote2$quoteTime),
+                          (q@quoteTime))
+    q@account <- ifelse(!is.null(quote2$account),
+                          (quote2$account),
+                          (q@account))
     q
 }
 ##' An as.vector method for quote
@@ -397,20 +409,19 @@ as.vector.quote <- function(quote) {
     res <- c(
         quote@bid ,
         quote@ask,
-        quote@ok,
         quote@bidSize ,
-    quote@askSize ,
-    quote@bidDepth ,
-    quote@askDepth,
-    quote@last,
-    quote@lastSize ,
-    quote@lastTrade ,
-    quote@quoteTime,
-    quote@ok,
-    quote@account,
-    quote@venue ,
-    quote@symbol
-)
+        quote@askSize ,
+        quote@bidDepth ,
+        quote@askDepth,
+        quote@last,
+        quote@lastSize ,
+        quote@lastTrade ,
+        quote@quoteTime,
+        quote@ok,
+        quote@account,
+        quote@venue ,
+        quote@symbol
+    )
 }
 ##' A show method for quote objects
 ##'
