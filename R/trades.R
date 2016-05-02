@@ -139,10 +139,10 @@ get_bid <- function(venue, ticker, spread=40) {
 ##' @export
 get_spreads <- function(venue, stock, position, spread) {
     ord <- as_orderbook(venue, stock)
-    q <- as_quote(venue, stock)
+    ## q <- as_quote(venue, stock)
     bids <- summary(ord, type="bids")
     asks <- summary(ord, type="asks")
-    book <- list(bids=bids, asks=asks, quote=quote)
+    book <- list(bids=bids, asks=asks)
     pos <- position@current_position
     if(pos > 0) {
         bid <- median(bids$price) - 1
@@ -151,7 +151,7 @@ get_spreads <- function(venue, stock, position, spread) {
     }
     if(pos < 0) {
         ask <- median(asks$price) + 1
-        bid <- min(bids$price) + 1
+        bid <- min(bids$price) + 10
         res <- c(bid, ask)
     }
     if(pos==0) {
@@ -238,12 +238,12 @@ clear_position <- function(level, position, apikey, tolerance, spread) {
         if(sumpos$position > 0) {
             compsell <- 0
             bids <- get_spreads(venue, stock, position, spread)
-            pricesell <- bids[2] - 1
+            pricesell <- bids[2] - (spread/4)
             
             message("clearing position at  ", pricesell, "\n")
             sellp <- make_order(level, price=pricesell, direction="sell", qty=sumpos$position, ordertype="ioc", apikey=apikey) %>% parse_response()
             if(sellp$totalFilled==0) {
-                compsell <- compsell - 1
+                compsell <- compsell - (spread / 4)
             }
             position <- update_position(position, apikey)
         }
@@ -255,7 +255,7 @@ clear_position <- function(level, position, apikey, tolerance, spread) {
             message("clearing position at  ", pricebuy, "\n")
             buyp <- make_order(level, price=pricebuy, direction="buy", qty=(sumpos$position)*-1, ordertype="ioc", apikey=apikey) %>% parse_response()
                 if(buyp$totalFilled==0) {
-                    compbuy <- compbuy + 1
+                    compbuy <- compbuy + (spread / 4)
                 }
             position <- update_position(position, apikey)
             sumpos <- print(position)
