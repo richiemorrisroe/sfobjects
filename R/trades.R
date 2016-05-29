@@ -214,7 +214,6 @@ update_position <- function(position, apikey) {
         new_pos@fills <- allord$orders$fills
         open_ord <- filter(allord$orders, isTRUE(open))
         new_pos@open_orders <- open_ord
-        
         return(new_pos)
     }
     return(position)
