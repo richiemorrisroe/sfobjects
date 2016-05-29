@@ -23,16 +23,16 @@ start_level <- function(level="first_steps", ...) {
 ##' @author richie
 ##' @export
 change_instance <- function(level, action) {
-    level_data <- content(level)
+    level_data <- httr::content(level)
     instance_id <- level_data[["instanceId"]]
     url <- paste(base_gm, "instances/", instance_id, "/", action, sep="")
     print(instance_id)
     print(url)
     if(action %in% c("stop", "resume")) {
-        res <- httr::POST(url=url, httr::add_headers("X-Starfighter-Authorization"=apikey), verbose())
+        res <- httr::POST(url=url, httr::add_headers("X-Starfighter-Authorization"=apikey), httr::verbose())
     }
     else {
-        res <- httr::GET(url, httr::add_headers("X-Starfighter-Authorization"=apikey), verbose())}
+        res <- httr::GET(url, httr::add_headers("X-Starfighter-Authorization"=apikey), httr::verbose())}
     res
 }
 ##' Get some information relating to the level. This often includes information to make things easier
@@ -49,7 +49,7 @@ level_status <- function(level, ...)  {
         instance <- level@id
     }
     else {
-        instance <- content(level)[["instanceId"]]
+        instance <- httr::content(level)[["instanceId"]]
     }
     url <- paste(base_gm, "instances/", instance, sep="")
     res <- httr::GET(url,
