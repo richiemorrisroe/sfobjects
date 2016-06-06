@@ -5,7 +5,8 @@ Authors@R: person("First", "Last", email = "first.last@example.com", role = c("a
 Description: What the package does (one paragraph).
 Depends:
     R (>= 3.2.3),
-    stockfighterr
+    stockfighterr,
+    magrittr
 License: What license is it under?
 LazyData: true
 Suggests:

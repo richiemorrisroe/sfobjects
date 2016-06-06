@@ -547,3 +547,17 @@ as_quote <- function(venue, stock) {
     qq <- new_quote(qp)
 }
                                        
+##' Call get all orders and return an orderlist object
+##'
+##' Not entirely implemented yet
+##' @title as_orderlist
+##' @param level the current level
+##' @param apikey X-Starfighter-Authorization
+##' @return an orderlist object
+##' @author richie
+##' @export
+as_orderlist <- function(level, apikey) {
+    account <- account(level)
+    venue <- venue(level)
+    allord <- get_all_orders(venue, account, apikey)
+}
