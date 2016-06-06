@@ -1,4 +1,3 @@
-##' @importFrom magrittr "%>%"
 ##tinychange
 ##' Convert factor variable to numeric
 ##'
@@ -409,6 +408,13 @@ bid_ask_ratio <- function(ord) {
     reslist
     
 }
+##' iterate over a list of venues, returning the stocks available at each
+##'
+##' As above
+##' @title get_all_tickers
+##' @param venues a vector of venues 
+##' @return a list of tickers available at each venue
+##' @author richie
 get_all_tickers <- function(venues) {
     myticks <- list()
     for(i in 1:nrow(venues$venues)) {
@@ -417,6 +423,14 @@ get_all_tickers <- function(venues) {
     }
     myticks
 }
+##' Returns f with timing added
+##'
+##' returns a function that will do the original work, and has an additional time component which gives the start and end times 
+##' @title timed
+##' @param f a function
+##' @param ... other arguments to be passed to f
+##' @return a function with a signature of ... which passes arguments to f
+##' @author richie
 timed <- function(f, ...) {
     function(...) {
         start <- Sys.time()
@@ -446,4 +460,30 @@ wss_shell <- function(level, type=c("tickertape", "executions"), location="./", 
     full_url <- paste0(base_wss, account, "/venues/", venue, "/", type, "/", stock)
     print(full_url)
     system(paste0(location, "wsclient ", full_url, "> ", ofile, ".txt"),  wait=FALSE)
+}
+##' Run information functions in separate threads to ensure timing accuracy
+##'
+##' This function should give a window into market state at a consistent time
+##' @title state_of_market
+##' @param level a level
+##' @param apikey an X-Starfighter-Authorization token
+##' @return a list containing an orderbook, a quote object and details of current orders on this level
+##' @author richie
+##'@export
+state_of_market <- function(level, apikey) {
+    stopifnot(class(level)=="level")
+    account <- account(level)
+    venue <- venue(level)
+    stock <- ticker(level)
+    funclist <- list(
+        bquote(as_orderbook(.(venue), .(stock))),
+        bquote(as_quote(.(venue), .(stock))),
+        bquote(get_all_orders(.(venue), .(account), .(apikey))))
+        
+        
+    cl <- parallel::makeForkCluster(nnodes=6)
+
+    res <- parallel::parLapply(cl=cl, X=funclist, fun=eval)
+    names(res) <- c("orderbook", "quote", "myorders")
+    res
 }
