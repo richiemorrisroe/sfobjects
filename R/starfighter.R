@@ -1,4 +1,5 @@
-#tinychange
+##' @importFrom magrittr "%>%"
+##tinychange
 ##' Convert factor variable to numeric
 ##'
 ##' Mostly because I dislike StringsAsFactors=FALSE
@@ -416,12 +417,15 @@ get_all_tickers <- function(venues) {
     }
     myticks
 }
-timed <- function(f) {
-    function(f, ...) {
-    start <- Sys.time()
-    res <- force(f)
-    end <- Sys.time()
-    res <- list(time=c(start, end), res)
+timed <- function(f, ...) {
+    function(...) {
+        start <- Sys.time()
+        dots <- as.list(substitute(list(...)))[-1L]
+        args <- formals(f)
+        names(dots) <- args
+        res <- force(do.call(f, dots))
+        end <- Sys.time()
+        res <- list(time=c(start, end), res)
     }
 }
 ##' shell out to wss program to get either executions or tickertape
