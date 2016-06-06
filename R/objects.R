@@ -457,19 +457,19 @@ setGeneric("show", def=show.quote)
 ##' @return a dataframe containing prices and cumulative_qty for either bids or asks
 ##' @author richie
 ##' @export
-summary.orderbook <- function(object, type=c("bids", "asks")) {
+summary.orderbook <- function(object, ...) {
     bids <- object@bids
     asks <- object@asks
     bids2 <- bids %>%
-    group_by(price) %>%
-    summarise(qty=sum(qty)) %>%
-        arrange(desc(price))  %>%
-        mutate(cum_qty=cumsum(qty))
+    dplyr::group_by(price) %>%
+    dplyr::summarise(qty=sum(qty)) %>%
+        dyplr::arrange(desc(price))  %>%
+        dplyr::mutate(cum_qty=cumsum(qty))
     asks2 <- asks %>%
-            group_by(price) %>%
-    summarise(qty=sum(qty)) %>%
-        arrange(price)  %>%
-        mutate(cum_qty=cumsum(qty))
+            dplyr::group_by(price) %>%
+    dplyr::summarise(qty=sum(qty)) %>%
+        dplyr::arrange(price)  %>%
+        dplyr::mutate(cum_qty=cumsum(qty))
     list(bids=bids2, asks=asks2,
          ratio=max(bids2$cum_qty) / max(asks2$cum_qty))
     if(type=="bids")
