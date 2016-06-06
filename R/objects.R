@@ -261,8 +261,9 @@ setClass(Class="Position", slots = list(
 ##' @author richie
 ##' @export
 new_order <- function(response) {
-    stopifnot(class(response) == "response")
-    p <- parse_response(response)
+    ## stopifnot(class(response) == "response")
+    ## p <- parse_response(response)
+    p <- response
     ord <- new("order-response",
                ok=p$ok,
                account = p$account,
@@ -553,11 +554,19 @@ as_quote <- function(venue, stock) {
 ##' @title as_orderlist
 ##' @param level the current level
 ##' @param apikey X-Starfighter-Authorization
+##' @param id 
 ##' @return an orderlist object
 ##' @author richie
 ##' @export
 as_orderlist <- function(level, apikey) {
     account <- account(level)
     venue <- venue(level)
-    allord <- get_all_orders(venue, account, apikey)
+    allord <- get_all_orders(venue, account, apikey) %>% parse_response()
+    ord <- allord$orders
+    if(length(ord)>0 && dim(ord)[1] > 0) {
+        ordlist <- apply(ord, 1, new_order)
+    }
+    else {
+        ordlist <- NULL
+    }
 }
