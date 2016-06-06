@@ -478,12 +478,10 @@ state_of_market <- function(level, apikey) {
     funclist <- list(
         bquote(as_orderbook(.(venue), .(stock))),
         bquote(as_quote(.(venue), .(stock))),
-        bquote(get_all_orders(.(venue), .(account), .(apikey))))
-        
-        
+        bquote(as_orderlist(.(level), .(apikey))),
+    bquote(parse_response(level_status(.(level)))))
     cl <- parallel::makeForkCluster(nnodes=6)
-
     res <- parallel::parLapply(cl=cl, X=funclist, fun=eval)
-    names(res) <- c("orderbook", "quote", "myorders")
+    names(res) <- c("orderbook", "quote", "myorders", "level-status")
     res
 }
