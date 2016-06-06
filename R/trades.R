@@ -263,7 +263,19 @@ clear_position <- function(level, position, apikey, tolerance, spread) {
     }
     return(position)
 }
-
+##' stuff
+##'
+##' more stuff
+##' @title make_order
+##' @param level 
+##' @param price 
+##' @param qty 
+##' @param direction 
+##' @param ordertype 
+##' @param apikey 
+##' @return 
+##' @author richie
+##' @export
 make_order <- function(level, price, qty, direction, ordertype, apikey) {
     account <- account(level)
     venue <- venue(level)
