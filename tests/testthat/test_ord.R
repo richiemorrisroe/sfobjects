@@ -125,9 +125,9 @@ test_that("place_order returns a response", {
                                            body = ordbuy, apikey=apikey)
     expect_is(placebuy, "response")
 })
-test_that("get spreads returns a vector of length three", {
+test_that("get spreads returns a vector of length two", {
     apikey <- get_api_key("~/Dropbox/Code/Starfighter/apikey.txt")
     pos <- new("Position")
     pos@current_position <- 0L
-    expect_equal(length(get_spreads("TESTEX", "FOOBAR", position=pos, spread=100)), 3)
+    expect_equal(length(get_spreads("TESTEX", "FOOBAR", position=pos, spread=100)), 2)
 })
