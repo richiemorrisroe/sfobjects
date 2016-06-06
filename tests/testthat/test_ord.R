@@ -109,7 +109,7 @@ test_that("a placed order returns a totalFilled numeric greater than 0", {
                         ordertype="ioc")
     placed <- place_order("TESTEX", "FOOBAR", body=ord, apikey=apikey)
     placedp <- parse_response(placed)
-        expect_gte(placebuyp[["totalFilled"]], 0)
+        expect_gte(placedp[["totalFilled"]], 0)
     })
 
 test_that("place_order returns a response", {
