@@ -1,6 +1,6 @@
 ##' Places a pair of buy and sell orders
 ##'
-##' This is actually OK now. It works, and doesn't have too much spaghetti code. 
+##' This is actually OK now. It works, and doesn't have too much spaghetti code.Need to use parLapply to ensure that orders are placed at the same time. Possible cause of the lack of making money
 ##' @title trade
 ##' @param level 
 ##' @param position 
