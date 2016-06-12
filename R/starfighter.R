@@ -431,6 +431,7 @@ get_all_tickers <- function(venues) {
 ##' @param ... other arguments to be passed to f
 ##' @return a function with a signature of ... which passes arguments to f
 ##' @author richie
+##' @export
 timed <- function(f, ...) {
     function(...) {
         start <- Sys.time()
@@ -470,18 +471,111 @@ wss_shell <- function(level, type=c("tickertape", "executions"), location="./", 
 ##' @return a list containing an orderbook, a quote object and details of current orders on this level
 ##' @author richie
 ##'@export
-state_of_market <- function(level, apikey) {
+state_of_market <- function(level, apikey, timed=TRUE) {
     stopifnot(class(level)=="level")
     account <- account(level)
     venue <- venue(level)
     stock <- ticker(level)
+    if(timed) {
+
+        funclist <- list(
+            bquote(timed_orderbook(.(venue), .(stock))),
+        bquote(timed_quote(.(venue), .(stock))),
+        bquote(timed_orderlist(.(level), .(apikey))),
+        bquote(timed_status(.(level), .(apikey))))
+        } else {
     funclist <- list(
         bquote(as_orderbook(.(venue), .(stock))),
         bquote(as_quote(.(venue), .(stock))),
         bquote(as_orderlist(.(level), .(apikey))),
-    bquote(parse_response(level_status(.(level)))))
+        bquote(parse_response(level_status(.(level)))))
+        }
     cl <- parallel::makeForkCluster(nnodes=6)
     res <- parallel::parLapply(cl=cl, X=funclist, fun=eval)
-    names(res) <- c("orderbook", "quote", "myorders", "level-status")
+    parallel::stopCluster(cl=cl)
+    names(res) <- c("orderbook", "quote", "myorders", "level_status")
     res
 }
+##' Create or update an environment with market data
+##'
+##' This function uses global assignment and environments, so weird stuff is probably going to happen. 
+##' @title update_state
+##' @param state an object returned by state_of_market
+##' @return 
+##' @author richie
+##' @export
+update_state <- function(current, previous) {
+    if(is.null(previous)) {
+        orderb <- purrr::map(state, "orderbook")
+        b2a <- bid_ask_ratio(orderb)
+    quote <- purrr::map(state, "quote")
+    myorders <- purrr::map(state, "quote")
+    status <- purrr::map(state, "level-status")
+    res <- list(orderb, quote, myorders, status)
+    }
+}
+##' Extract important fields from quote object
+##'
+##' To be used to build up market model
+##' @title quote_stats
+##' @param current current quote
+##' @param previous previous output from quote stats.
+##' @return a dataframe containing market information
+##' @author richie
+###@export
+quote_stats <- function(current, previous) {
+    if(is.null(previous)) {
+        previous <- data.frame(bid = NA,ask = NA, last = NA,
+                         ts = NA, start = NA, end = NA)
+    }
+    q <- current$quote[[2]]
+    bid <- q@bid
+    ask <- q@ask
+    last <- q@last
+    ts <- q@quoteTime
+    start_time <- current$quote$time[1]
+    end_time <- current$quote$time[2]
+    res <- data.frame(bid = bid, ask = ask, last = last,
+                      ts = ts,
+                      start = start_time,
+                      end = end_time)
+    updatedf <- rbind(previous, res)
+}
+##' returns a dataframe containing all bids and asks
+##'
+##' Uses server time as index 
+##' @title orderbook_stats
+##' @param current the new orderbook
+##' @param previous the previous orderbook
+##' @return an update
+##' @author richie
+##' @export
+orderbook_stats <- function(current, previous) {
+    if (is.null(previous)) {
+        bids <- get_bids(current[[2]])
+        asks <- get_asks(current[[2]])
+        orderb <- rbind(bids, asks)
+    }
+    else {
+        bids <- get_bids(current[[2]])
+        asks <- get_asks(current[[2]])
+        curr <- rbind(bids, asks)
+        if(class(previous)=="orderbook") {
+            prevb <- get_bids(previous)
+            preva <- get_asks(previous)
+            prev <- rbind(prevb, preva)
+        }
+        else {
+            prev <- previous
+        }
+        orderb <- rbind(curr, prev)
+    }
+}
+##'@export
+timed_orderbook <- timed(as_orderbook)
+##'@export
+timed_quote <- timed(as_quote)
+##'@export
+timed_orderlist <- timed(as_orderlist)
+##'@export
+timed_status <- timed(level_status)
