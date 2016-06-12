@@ -39,22 +39,18 @@ change_instance <- function(level, action) {
 ##'
 ##' See above
 ##' @title level_status 
-##' @param level a HTTP response representing a level
-##' @param ... Other arguments passed to GET()
+##' @param level a level object
+##' @param apikey an authorization code
 ##' @return a HTTP response indicating the results
 ##' @author richie
 ##' @export
-level_status <- function(level, ...)  {
-    if(class(level)=="level") {
-        instance <- level@id
-    }
-    else {
-        instance <- httr::content(level)[["instanceId"]]
-    }
+level_status <- function(level, apikey)  {
+    stopifnot(class(level)=="level") 
+    instance <- level@id
     url <- paste(base_gm, "instances/", instance, sep="")
     res <- httr::GET(url,
                      httr::add_headers(
-                         "X-Starfighter-Authorization"=apikey), ...)
+                         "X-Starfighter-Authorization"=apikey))
     
 }
 ##' get the level id from a level object
