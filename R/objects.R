@@ -70,9 +70,12 @@ setGeneric("ticker", function (object) {
 ##' @export
 get_bids <- function(object) {
     if(dim(na.omit(object@bids))[1]==0) {
-        return(NA)
+        return(data.frame(price=NA, qty=NA, isBuy=NA, ts=object@ymdhms))
     } else {
-        object@bids
+        bids <- object@bids
+        ts <- object@ymdhms
+        bids[,"ts"] <- rep(ts, length=nrow(bids))
+        bids
     }
 }
 bidsummary <- function(bids) {
@@ -95,9 +98,12 @@ bidsummary <- function(bids) {
 ##' @export
 get_asks <- function(object) {
     if(dim(na.omit(object@asks))[1]==0) {
-        return(NA)
+        return(data.frame(price=NA, qty=NA, isBuy=NA, ts=object@ymdhms))
     } else {
-        object@asks
+        asks <- object@asks
+        ts <- object@ymdhms
+        asks[,"ts"] <- rep(ts, length=nrow(asks))
+        asks
     }
 }
 ## setMethod("asks", signature("orderbook"),
