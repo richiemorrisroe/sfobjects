@@ -1,4 +1,4 @@
-#tinychange
+#TODO: figure out if all classes should have a local time
 setClass(Class="trades",
          slots=list(ok = "logical",
                     account = "character",
@@ -8,7 +8,37 @@ setClass(Class="trades",
                         account=NA_character_,
                         venues=NA_character_,
                         tickers=NA_character_))
-
+##TODO: this doesn't match the signature returned by timed_ functions
+##TODO: this also needs a constructor function
+setClass(Class="Timed",
+         slots=list(timestamp="POSIXct", res="ANY"))
+##' Extract the local ts from an object inheriting from class Time
+##'
+##' Simples.
+##' @title get_time
+##' @param obj 
+##' @return a timestamp in POSIXct format
+##' @author richie
+##' @export
+get_time <- function(obj) {
+    stopifnot(is.list(obj))
+    stopifnot(length(obj)==2)
+    ts <- obj$timestamp
+    ts
+}
+##' Extract the non-ts component of a Timed request
+##'
+##' More simples
+##' @title get_result
+##' @param obj 
+##' @return 
+##' @author richie
+get_result <- function(obj) {
+        stopifnot(is.list(obj))
+        stopifnot(length(obj)==2)
+        res <- obj[[2]]
+        res
+}
 ##' A get account function for objects inheriting from the trade class
 ##'
 ##' See above
@@ -60,6 +90,9 @@ setMethod("ticker", signature("trades"),
 setGeneric("ticker", function (object) {
     standardGeneric("ticker")
 })
+##TODO: can this be generalised to handle quotes also
+##TODO: why do we need seperate functions for bids and asks?
+##TODO: use parse_ts
 ##' Function to extract the current bids from an orderbook object
 ##'
 ##' See above
@@ -78,6 +111,8 @@ get_bids <- function(object) {
         bids
     }
 }
+##TODO: actually use this function
+##TODO: might be easier to generalise this across bids and asks
 bidsummary <- function(bids) {
     bids2 <- bids %>%
         group_by(price) %>%
@@ -88,7 +123,8 @@ bidsummary <- function(bids) {
 }
 ## setMethod("bids", signature("orderbook"),
 ##           def = bids)
-##' extract the bids component of an orderbook
+##TODO: use parse_ts here
+##' extract the asks component of an orderbook
 ##'
 ##' See above
 ##' @title get_asks
@@ -110,7 +146,7 @@ get_asks <- function(object) {
 ##           def = asks)
 
 
-
+##TODO: should level class include level status also?
 setClass(Class="level",
                   slots = list(id="integer",
                                instructions="list",
@@ -147,6 +183,7 @@ level <- function(response) {
     }
 }
 setClassUnion("List", members=c("list", NULL))
+##TODO: make constructor function for this object
 setClass("status",
                    contains = "trades",
          slots = c(flash="List",
@@ -157,6 +194,7 @@ setClass("orderbook",
          slots = list(ymdhms="POSIXt",
                       bids="data.frame",
                       asks="data.frame"), contains="trades")
+##TODO: decide whether or not to use these, and either remove or expand based on that decision
 setMethod("==",
     signature(e1 = "orderbook", e2="orderbook"),
     function (e1, e2)  {
@@ -165,6 +203,7 @@ setMethod("==",
            all.equal(e1@asks, e2@asks)) TRUE else FALSE
     }
     )
+##TODO: lastTrade and quoteTime should be a POSIXct object
 setClass("quote",
          slots=list(bid="integer",
                     ask="integer",
@@ -189,6 +228,7 @@ setClass("quote",
                     lastTrade=NA_character_,
                     quoteTime=NA_character_),
          contains="trades")
+##TODO: figure out if I need these
 setMethod("==",
     signature(e1 = "quote", e2 = "quote"),
     function (e1, e2) 
@@ -203,6 +243,7 @@ setMethod("==",
                e1@lastTrade==e2@lastTrade, TRUE, FALSE)
     }
     )
+##TODO: use this or remove it, definitely needs a timestamp
 setClass(Class="order",
          representation=list(
              direction = "character",
@@ -216,6 +257,7 @@ setClass(Class="order-response",
                                 fills = "list",
                                 total_filled = "integer",
                                 open = "logical"), contains="order")
+##TODO: remove one of order or new_order
 ##' create order-response object
 ##'
 ##' returns the object
@@ -240,7 +282,7 @@ order <- function(response) {
                open=response$open)
     return(ord)
 }
-               
+
 setClass(Class="Position", slots = list(
                                total_sold = "integer",
                                total_bought = "integer",
@@ -299,7 +341,7 @@ get_component <- function(x, component) {
     res <- function (x) x[[component]]
     res
 }
-
+##TODO: write a quote method and make this generic
 ##' @export
 spreads.orderbook <- function(orderbook) {
     bids <- orderbook@bids
@@ -307,6 +349,7 @@ spreads.orderbook <- function(orderbook) {
     spread <-  min(asks$price) - max(bids$price)
     spread
 }
+##TODO: see if this can be removed, far too specific
 ##' utility function for ensuring that bid/ask dfs do not return null
 ##' See description
 ##' @title df_or_null
@@ -321,6 +364,8 @@ df_or_null <- function(order, component) {
     }
     order
 }
+##TODO: fix time function
+##TODO: handle NULL in class instatiation
 ##' Function that creates a new orderbook object
 ##' wrapper around a call to "new" that performs null removals and other checks
 ##' @title orderbook
@@ -404,7 +449,7 @@ new_quote <- function(quote) {
                           (q@account))
     q
 }
-##' An as.vector method for quote
+##' An as.data.frame method for quote
 ##'
 ##' See above
 ##' @title as.vector.quote
@@ -412,8 +457,8 @@ new_quote <- function(quote) {
 ##' @return a vector containing the elements of the quote
 ##' @author richie
 ##' @export
-as.vector.quote <- function(quote) {
-    res <- c(
+as.data.frame.quote <- function(quote) {
+    res <- data.frame(
         quote@bid ,
         quote@ask,
         quote@bidSize ,
@@ -576,3 +621,4 @@ as_orderlist <- function(level, apikey) {
         ordlist <- NULL
     }
 }
+
