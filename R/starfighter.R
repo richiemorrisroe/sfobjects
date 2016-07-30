@@ -68,34 +68,35 @@ repeat_call <- function(times, call, sleep=0,print=FALSE ) {
 as.fnumeric <- function(x) {
     as.numeric(as.character(x))
 }
-
+##TODO: check if this is used
 response_to_df <- function(parsed_response) {
     parsedmat <- do.call("rbind", parsed_response)
     parsed.df <- sapply(as.data.frame(parsedmat), unlist)
     parsed.df
 }
+##TODO:merge this with wss shell to create a monster!!!!(or at least reduce duplication)
 get_tickertape <- function(account, venue) {
     ##sadface, Curl (and thus httr) doesn't support websockets
     base_url_wss <- "wss://api.stockfighter.io/ob/api/ws/"
     url <- paste(base_url_wss, account, "/venues/", venue, "/tickertape", sep="")
     res <- httr::GET(url, add_headers("X-Starfighter-Authorization"=apikey))
 }
-
+##DONE: replace with lubridate::parse_date_time(t, "YmdhmOS") and call to set digits.secs=6
+##TODO: use this function throughout code (figure out how to get Sys.time to work
 ##' An almost entirely unnecessary parsing function
 ##'
 ##' See above
 ##' @title parse_ts
 ##' @param order an object that has a ts type column
 ##' @param timestamp the column to convert (needs options(fractional.seconds=7+) to be useful
-##' @return a dataframe containing the ymdhms and fractional second components
+##' @return the object with the time in POSIXct with 6fractional seconds
 ##' @author richie
 parse_ts <- function(order, timestamp) {
-    myts <- lubridate::ymd_hms(as.character(order[[timestamp]]))
-    split <- unlist(strsplit(as.character(order[[timestamp]]), ".", fixed=TRUE))
-    millis <- stringr::str_extract(split[2], "[0-9]+")
-    df <- return(data.frame(ymdhms=myts, milli=as.numeric(millis)))
+    myts <- withr::with_options(c(digits.secs=6),
+        code=lubridate::parse_date_time(order[[timestamp]], "YmdhmOS6"), tz="UTC")
 
 }
+##TODO: change to as.data.frame method
 ##' Convert a list of quote objects to a dataframe
 ##'
 ##' Lists of quote objects are returned by the monitor function. 
@@ -127,7 +128,7 @@ qlist_to_df <- function(quotelist) {
     resdf
 }
 
-
+##TODO:merge or delete
 ##' An attempt at using the websocket endpoints.
 ##'
 ##' it appears that httr and curl don't support wss endpoints. I suspect that with some care, an upgrade request can be sent as per the spec (which allows for a HTTP response). This turned out to be true, I can get the server upgrade response, but I can't seem to parse it correctly (yet). This attempt was doomed, but I can call out to an external program and get the data, which is better than nothing
@@ -148,6 +149,7 @@ get_tickertape <- function(account, venue, ...) {
                                       "Sec-Websocket-Key"="e23vsOnh1QGrwNI7ahsr7w==" ), ...)
     return(res)
 }
+##TODO: probably delete
 ##' Monitor a stockfighter level
 ##'
 ##' Runs a while loop around a particular level
@@ -207,6 +209,7 @@ monitor <- function(venue, stock, level=level, name=name) {
     })
     ordlist
 }
+##TODO: take a state object and then decide - should not access network for data.
 ##' Top level function for buying and selling according to rules
 ##'
 ##' See above
@@ -263,7 +266,7 @@ market_make <- function(level, ordertype="limit", qty=NULL) {
     
     
 }
-
+##TODO: generalise for level-status object
 level_3_stats <- function(level) {
     stat <- level_status(level=level)
     sp <- stat %>% parse_response()
@@ -278,6 +281,7 @@ level_3_stats <- function(level) {
         return(NA)
     }
 }
+##TDOD: generalise all this to_df conversions
 ##' Take a series of calls to get_orderbook, and return the results as a df
 ##'
 ##' See above. Will document the fields here later
@@ -316,7 +320,7 @@ parse_orderlist <- function(orderlist, parallel=TRUE, data.frame=TRUE) {
     res
 }
 
-
+##TODO: use this position, in updating state, no network access used
 ##' Some stuff
 ##'
 ##' Some more stuff
@@ -333,16 +337,16 @@ get_position <- function(orders) {
     fills <- select(ord2, id, direction, fills, totalFilled)
     fills2 <- tidyr::unnest(fills)
     pos <- fills2 %>%
-        mutate(spend=price*qty) %>%
-        group_by(direction) %>%
-        summarise(spend2=sum(spend),
+        dplyr::mutate_(spend=price*qty) %>%
+        dplyr::group_by(direction) %>%
+        dplyr::summarise(spend2=sum(spend),
                   total_filled=sum(totalFilled)) %>%
-        mutate(ppu=spend2/total_filled)
+        dplyr::mutate(ppu=spend2/total_filled)
     pos
     
 }
 
-
+##TODO: remove network access keep logic
 ##' Currently just gets bid and ask price
 ##'
 ##' Don't think this is at the right level of abstraction
@@ -391,7 +395,7 @@ get_price_and_qty <- function(orderbook) {
     }
 }
 
-
+##TODO: fold into summary function
 ##' Honestly think I'll fold this into the summary function
 ##'
 ##' 
@@ -408,6 +412,7 @@ bid_ask_ratio <- function(ord) {
     reslist
     
 }
+
 ##' iterate over a list of venues, returning the stocks available at each
 ##'
 ##' As above
@@ -415,14 +420,16 @@ bid_ask_ratio <- function(ord) {
 ##' @param venues a vector of venues 
 ##' @return a list of tickers available at each venue
 ##' @author richie
+##'@export
 get_all_tickers <- function(venues) {
     myticks <- list()
     for(i in 1:nrow(venues$venues)) {
-        venues <- venuelist$venues$venue
-        myticks[[i]] <- get_tickers(venues[i])
+        ven <- venues$venues$venue
+        myticks[[i]] <- get_tickers(ven[i])
     }
     myticks
 }
+##TODO: handle how this interacts with the object structure
 ##' Returns f with timing added
 ##'
 ##' returns a function that will do the original work, and has an additional time component which gives the start and end times 
@@ -434,15 +441,16 @@ get_all_tickers <- function(venues) {
 ##' @export
 timed <- function(f, ...) {
     function(...) {
-        start <- Sys.time()
         dots <- as.list(substitute(list(...)))[-1L]
         args <- formals(f)
         names(dots) <- args
+        start <- withr::with_options(c(digits.secs=6), lubridate::now(tzone="UTC"))
         res <- force(do.call(f, dots))
-        end <- Sys.time()
-        res <- list(time=c(start, end), res)
+        end <- withr::with_options(c(digits.secs=6), lubridate::now(tzone="UTC"))
+        res <- list(time=data.frame(start=start, end=end), res)
     }
 }
+## TODO: does this even work still?
 ##' shell out to wss program to get either executions or tickertape
 ##'
 ##' Need to integrate this properly at some point
@@ -496,9 +504,12 @@ state_of_market <- function(level, apikey, timed=TRUE) {
     names(res) <- c("orderbook", "quote", "myorders", "level_status")
     res
 }
+
+##TODO: use df conversion functions to handle this, index as a zoo class
+##TODO: currently, this does nothing
 ##' Create or update an environment with market data
 ##'
-##' This function uses global assignment and environments, so weird stuff is probably going to happen. 
+##' This function uses global assignment and environments, so weird stuff is probably going to happen. (not right now it doesn't)
 ##' @title update_state
 ##' @param state an object returned by state_of_market
 ##' @return 
@@ -507,13 +518,14 @@ state_of_market <- function(level, apikey, timed=TRUE) {
 update_state <- function(current, previous) {
     if(is.null(previous)) {
         orderb <- purrr::map(state, "orderbook")
-        b2a <- bid_ask_ratio(orderb)
+        ## b2a <- bid_ask_ratio(orderb)
     quote <- purrr::map(state, "quote")
     myorders <- purrr::map(state, "quote")
     status <- purrr::map(state, "level-status")
     res <- list(orderb, quote, myorders, status)
     }
 }
+##TODO: incorporate into update_state
 ##' Extract important fields from quote object
 ##'
 ##' To be used to build up market model
@@ -568,7 +580,7 @@ orderbook_stats <- function(current, previous) {
         else {
             prev <- previous
         }
-        orderb <- rbind(curr, prev)
+        orderb <- rbind(prev, curr)
     }
 }
 ##'@export
@@ -579,3 +591,16 @@ timed_quote <- timed(as_quote)
 timed_orderlist <- timed(as_orderlist)
 ##'@export
 timed_status <- timed(level_status)
+
+full_orderbook <- function(orderbook) {
+    for(i in seq_along(orderbook)) {
+        if(i==1) {
+            ord <- orderbook_stats(orderbook[i], previous=NULL)
+        }
+        else {
+            ord <- orderbook_stats(orderbook[i], ord)
+        }
+        ord
+    }
+    ord
+}
