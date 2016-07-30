@@ -77,6 +77,9 @@ place_many_orders <- function(account, venue, stock,
         place_order(x$venue, x$stock, body=x, apikey=apikey))
     return(res)
 }
+##TODO: how is this different from get_price_and_qty
+##TODO: remove network access from everything
+##TODD: generalise all of this spread logic
 ##' Return a bid price and ask price derived from get_quote, regardless
 ##'
 ##' messages when it has a problem
