@@ -1,4 +1,4 @@
-#tiny change
+##TODO: this should probably return a level object
 base_gm <- "https://www.stockfighter.io/gm/"
 ##' Start a level by name
 ##' See above
@@ -29,10 +29,11 @@ change_instance <- function(level, action) {
     print(instance_id)
     print(url)
     if(action %in% c("stop", "resume")) {
-        res <- httr::POST(url=url, httr::add_headers("X-Starfighter-Authorization"=apikey), httr::verbose())
+        res <- httr::POST(url=url, httr::add_headers("X-Starfighter-Authorization"=apikey))
     }
     else {
-        res <- httr::GET(url, httr::add_headers("X-Starfighter-Authorization"=apikey), httr::verbose())}
+        res <- httr::GET(url, httr::add_headers("X-Starfighter-Authorization"=apikey))
+    }
     res
 }
 ##' Get some information relating to the level. This often includes information to make things easier
