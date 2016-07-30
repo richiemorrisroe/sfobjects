@@ -1,3 +1,5 @@
+##TODO: parallelise this along with cancelling orders
+##TODO: use make_order to simplify
 ##' Places a pair of buy and sell orders
 ##'
 ##' This is actually OK now. It works, and doesn't have too much spaghetti code.Need to use parLapply to ensure that orders are placed at the same time. Possible cause of the lack of making money
@@ -39,7 +41,7 @@ trade <- function(level, position, qty, spread) {
     names(reslist) <- directions
     return(reslist)
 }
-
+##TODO: make this actually work, generalise the cluster building
 ##' Make a trade of size qty/split in the form of multiple orders
 ##'
 ##' 
@@ -98,6 +100,7 @@ get_bid <- function(venue, ticker, spread=40) {
     print(c(bid, ask, last))
     while(all(is.null(bid) & is.null(ask) & is.null(last))) {
         message("not even a last price")
+        ##TODO: at this point, make any market you like
         Sys.sleep(2)
         q2 <- get_quote(venue, ticker)
         qp <- parse_response(q2)
@@ -130,7 +133,7 @@ get_bid <- function(venue, ticker, spread=40) {
 
     return(c(buyprice, sellprice))
 }
-
+##TODO: remove network access, rationalise spread logic
 ##' Get spreads and various orderbook related stuff
 ##'
 ##' This is fucking bullshit
@@ -162,7 +165,7 @@ get_spreads <- function(venue, stock, position, spread) {
     }
     res
 }
-
+##TODO: use this function somewhere. Need to keep track of P&L at the order level
 ##' Some stuff
 ##'
 ##' Some more stuff
@@ -187,7 +190,8 @@ get_position <- function(orders) {
     pos
     
 }
-
+##TODO: die, network access, die.
+##TODO: either this or get_position is redundant
 ##' Update a position object based on orders
 ##'
 ##' See above
@@ -221,10 +225,11 @@ update_position <- function(position, apikey) {
     }
     return(position)
 }
-
+##TODO: this always loses money. Smaller orders are probably better for this sort of thing
+##TODO: also, die, network access, die! recursive network access, at that
 ##' Function to sell/buy inventory to reduce holdings to zero
 ##'
-##' Uses ioc orders to prevent bots from catching on
+##' Uses ioc orders to prevent bots from catching on (i don't believe that this ever worked)
 ##' @title clear_position
 ##' @param level the current level
 ##' @param position an object of class position
@@ -266,17 +271,17 @@ clear_position <- function(level, position, apikey, tolerance, spread) {
     }
     return(position)
 }
-##' stuff
+##' Wrapper around create and place_ order
 ##'
-##' more stuff
+##' Just to save typing, essentially
 ##' @title make_order
-##' @param level 
-##' @param price 
-##' @param qty 
-##' @param direction 
-##' @param ordertype 
-##' @param apikey 
-##' @return 
+##' @param level a level object
+##' @param price an integer price
+##' @param qty an integer qty
+##' @param direction either buy or sell
+##' @param ordertype one of limit, market, ioc or fok
+##' @param apikey your apikey
+##' @return a response representing the status of an order
 ##' @author richie
 ##' @export
 make_order <- function(level, price, qty, direction, ordertype, apikey) {
@@ -293,6 +298,7 @@ make_order <- function(level, price, qty, direction, ordertype, apikey) {
     place <- place_order(venue, stock, body=creat, apikey=apikey)
     return(place)
 }
+##TODO: remove sequential network access
 ##' Stuff
 ##'
 ##' more stuff
@@ -310,6 +316,7 @@ cancel_orders <- function(orders, apikey) {
     }
     cancellist
 }
+##TODO: refactor to use cancel_order to enable threading
 ##' Cancel a set of open orders
 ##'
 ##' Cancel limit orders older than seconds
@@ -350,7 +357,7 @@ test_parallel <- function(venue, stock) {
             orders <- parallel::parLapply(cl, listvars, function(x) as_orderbook(venue = x[1], 
                                                                                   stock = x[2]))
 }
-
+##TODO: remove sequential network access
 update_orders <- function(orders) {
     ids <- lapply(orders, "[[", "id")
     venue <- orders[1][["venue"]]
