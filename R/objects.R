@@ -457,9 +457,7 @@ new_quote <- function(quote) {
 ##' @return a vector containing the elements of the quote
 ##' @author richie
 ##' @export
-setMethod("as.data.frame",
-    signature(x = "quote"),
-    function (x, row.names = NULL, optional = FALSE, ...) 
+as.data.frame.quote <- function (x, row.names = NULL, optional = FALSE, ...) {
     res <- data.frame(
         quote@bid ,
         quote@ask,
@@ -476,6 +474,10 @@ setMethod("as.data.frame",
         quote@venue ,
         quote@symbol
     )
+    }
+setMethod("as.data.frame",
+    signature(x = "quote"),
+    definition=as.data.frame.quote
 )
 ##' A show method for quote objects
 ##'
