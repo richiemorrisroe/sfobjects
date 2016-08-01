@@ -129,7 +129,7 @@ get_bid <- function(quote, spread=40) {
         sellprice <- ask - floor(spread / 4)
     }
 
-    return(c(buyprice, sellprice))
+    return(c(buyprice, sellprice, last))
 }
 ##TODO: remove network access, rationalise spread logic
 ##' Get spreads and various orderbook related stuff
