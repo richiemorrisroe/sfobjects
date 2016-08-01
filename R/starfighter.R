@@ -479,18 +479,17 @@ wss_shell <- function(level, type=c("tickertape", "executions"), location="./", 
 ##' @return a list containing an orderbook, a quote object and details of current orders on this level
 ##' @author richie
 ##'@export
+##'@importFrom future '%<-%'
 state_of_market <- function(level, apikey, timed=TRUE) {
     stopifnot(class(level)=="level")
     account <- account(level)
     venue <- venue(level)
     stock <- ticker(level)
     if(timed) {
-
-        funclist <- list(
-            bquote(timed_orderbook(.(venue), .(stock))),
-        bquote(timed_quote(.(venue), .(stock))),
-        bquote(timed_orderlist(.(level), .(apikey))),
-        bquote(timed_status(.(level), .(apikey))))
+        quote <- future::future(bquote(timed_quote(venue=.(venue), stock=.(stock))))
+        ord <- future::future(bquote(timed_orderbook(.(venue), .(stock))))
+        myorders <- future::future(bquote(timed_orderlist(.(testlev), apikey=.(apikey))))
+        status <- future::future(bquote(timed_status(.(testlev), apikey=.(apikey))))
         } else {
     funclist <- list(
         bquote(as_orderbook(.(venue), .(stock))),
@@ -498,9 +497,10 @@ state_of_market <- function(level, apikey, timed=TRUE) {
         bquote(as_orderlist(.(level), .(apikey))),
         bquote(parse_response(level_status(.(level)))))
         }
-    cl <- parallel::makeForkCluster(nnodes=6)
-    res <- parallel::parLapply(cl=cl, X=funclist, fun=eval)
-    parallel::stopCluster(cl=cl)
+    res <- list(orderbook=ord,
+                quote=quote,
+                myorders=myorders,
+                status=status)
     names(res) <- c("orderbook", "quote", "myorders", "level_status")
     res
 }
