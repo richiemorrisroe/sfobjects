@@ -209,63 +209,6 @@ monitor <- function(venue, stock, level=level, name=name) {
     })
     ordlist
 }
-##TODO: take a state object and then decide - should not access network for data.
-##' Top level function for buying and selling according to rules
-##'
-##' See above
-##' @title market_make
-##' @param level a level object
-##' @param ordertype the type of orders to place
-##' @return a list containing the orders placed
-##' @author richie
-market_make <- function(level, ordertype="limit", qty=NULL) {
-    if(level=="TEST") {
-        account <- "EXB123456"
-        venue <- "TESTEX"
-        ticker <- "FOOBAR"
-        balance <- NULL
-    }
-    else {
-    account <- get_component(level, "account")
-    venue <- get_component(level, "venues")
-    ticker <- get_component(level, "tickers")
-    balance <- get_component(level, "balances")
-    }
-    ## browser()
-    buys <- NA
-    sells <- NA
-    prices <- c(buys, sells)
-    while(any(is.na(prices))) {
-    orders <- get_orderbook(venue, ticker)
-    parsed <- orderbook(parse_response(orders))
-    if(level!="TEST") {
-    status <- level_status(level=level)
-    status.p <- parse_response(status)
-    if(!is.null(status.p$flash)) {
-        flash <- status.p$flash
-        print(flash)
-    }
-    }
-    if(is.na(parsed@bids$price)) {
-        next
-    }
-    buys <- ceiling(min(parsed@bids$price))
-    sells <- floor(max(parsed@asks$price))
-    buy_qty <- floor(min(parsed@bids$qty))
-    sell_qty <- floor(min(parsed@asks$qty))
-    prices <- c(buys, sells)
-    qties <- c(buy_qty, sell_qty)
-    cat(prices, "\n")
-    }
-    directions <- c("buy", "sell")
-    if(is.null(qty)) {
-        qty <- 1
-    }
-    reslist <- list()
-
-    
-    
-}
 ##TODO: generalise for level-status object
 level_3_stats <- function(level) {
     stat <- level_status(level=level)
