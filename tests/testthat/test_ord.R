@@ -128,7 +128,7 @@ test_that("place_order returns a response", {
 test_that("get spreads returns a vector of length two", {
     apikey <- get_api_key("~/Dropbox/Code/Starfighter/apikey.txt")
     pos <- new("Position")
-    q <- get_quote("TESTEX", "FOOBAR")
+    q <- as_quote("TESTEX", "FOOBAR")
     pos@current_position <- 0L
     expect_equal(length(get_spreads("TESTEX", "FOOBAR", position=pos, spread=100, quote=q)), 2)
 })
