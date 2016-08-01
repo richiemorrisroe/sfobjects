@@ -141,7 +141,7 @@ get_bid <- function(quote, spread=40) {
 ##' @return a list containing an orderbook, the spread and the minqty available 
 ##' @author richie
 ##' @export
-get_spreads <- function(venue, stock, position, spread) {
+get_spreads <- function(venue, stock, position, spread, quote) {
     ord <- as_orderbook(venue, stock)
     ## q <- as_quote(venue, stock)
     bids <- summary(ord, type="bids")
@@ -159,7 +159,7 @@ get_spreads <- function(venue, stock, position, spread) {
         res <- c(bid, ask)
     }
     if(pos==0) {
-        res <- get_bid(venue, stock, spread=spread)
+        res <- get_bid(quote, spread=spread)
     }
     res
 }
