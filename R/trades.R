@@ -92,21 +92,19 @@ place_many_orders <- function(account, venue, stock,
 ##' @return a vector containing a fudged bid and a qty to trade with
 ##' @author richie
 ##' @export
-get_bid <- function(venue, ticker, spread=40) {
-    q <- get_quote(venue, ticker) %>% parse_response()
-    bid <- q$bid
-    ask <- q$ask
-    last <- q$last
+get_bid <- function(quote, spread=40) {
+    q <- quote
+    bid <- q@bid
+    ask <- q@ask
+    last <- q@last
     print(c(bid, ask, last))
     while(all(is.null(bid) & is.null(ask) & is.null(last))) {
         message("not even a last price")
         ##TODO: at this point, make any market you like
-        Sys.sleep(2)
-        q2 <- get_quote(venue, ticker)
-        qp <- parse_response(q2)
-        bid <- qp$bid
-        ask <- qp$ask
-        last <- qp$last
+        bid <- 20000
+        ask <- 40000
+        buyprice <- bid
+        sellprice <- ask
     }
     if(is.null(bid) & is.null(ask)) {
         message("both missing")
