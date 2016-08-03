@@ -183,13 +183,12 @@ level <- function(response) {
     }
 }
 setClassUnion("List", members=c("list", NULL))
-##TODO: make constructor function for this object
 setClass("status",
                    contains = "trades",
          slots = c(flash="List",
                    done="logical",
                    state="character",
-                   details="list"), sealed=FALSE)
+                   details="List"))
 setClass("orderbook",
          slots = list(ymdhms="POSIXt",
                       bids="data.frame",
@@ -573,7 +572,29 @@ print.Position <- function (x, ...)
 setMethod("print",
     signature(x = "Position"),
     def=print.Position
-)
+    )
+##' Call for level status, return object of class status
+##'
+##' See above
+##' @title as_status
+##' @param level a level object
+##' @param apikey an APIKEY, for none use ""
+##' @return an S4 object of class status
+##' @author richie
+##'@export
+as_status <- function(level, apikey) {
+    stat <- level_status(level, apikey)
+    statp <- parse_response(stat)
+    stat2 <- new("status",
+                 ok= statp$ok,
+                 done = statp$done,
+                 state = statp$open,
+                 details = statp$details,
+                 flash = statp$flash)
+    return(stat2)
+}
+                 
+                 
 ##' Calls get_orderbook, and returns an orderbook object
 ##'
 ##' wraps calling the API, converting to list and then to an object of class orderbook
