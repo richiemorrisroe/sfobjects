@@ -584,11 +584,12 @@ setMethod("print",
 ##'@export
 as_status <- function(level, apikey) {
     stat <- level_status(level, apikey)
+    browser()
     statp <- parse_response(stat)
     stat2 <- new("status",
                  ok= statp$ok,
                  done = statp$done,
-                 state = statp$open,
+                 state = statp$state,
                  details = statp$details,
                  flash = statp$flash)
     return(stat2)
