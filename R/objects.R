@@ -3,11 +3,13 @@ setClass(Class="trades",
          slots=list(ok = "logical",
                     account = "character",
                     venues = "character",
-                    tickers = "character"),
+                    tickers = "character",
+                    timestamp="data.frame"),
          prototype=list(ok=NA,
                         account=NA_character_,
                         venues=NA_character_,
-                        tickers=NA_character_))
+                        tickers=NA_character_,
+                        timestamp=data.frame(start=NA, end=NA)))
 ##TODO: this doesn't match the signature returned by timed_ functions
 ##TODO: this also needs a constructor function
 setClass(Class="Timed",
