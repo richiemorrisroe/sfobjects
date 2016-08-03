@@ -586,6 +586,9 @@ as_status <- function(level, apikey) {
     stat <- level_status(level, apikey)
     browser()
     statp <- parse_response(stat)
+    if(is.null(statp$flash)) {
+        statp$flash <- list()
+    }
     stat2 <- new("status",
                  ok= statp$ok,
                  done = statp$done,
