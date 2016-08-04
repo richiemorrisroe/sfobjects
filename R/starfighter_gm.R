@@ -23,9 +23,8 @@ start_level <- function(level="first_steps", ...) {
 ##' @author richie
 ##' @export
 change_instance <- function(level, action) {
-    level_data <- httr::content(level)
-    instance_id <- level_data[["instanceId"]]
-    url <- paste(base_gm, "instances/", instance_id, "/", action, sep="")
+    id <- level@id
+    url <- paste(base_gm, "instances/", id, "/", action, sep="")
     print(instance_id)
     print(url)
     if(action %in% c("stop", "resume")) {
