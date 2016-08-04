@@ -466,9 +466,9 @@ wss_shell <- function(level, type=c("tickertape", "executions"), location="./", 
     venue <- venue(level)
     stock <- ticker(level)
     base_wss <-  "wss://api.stockfighter.io/ob/api/ws/"
-    full_url <- paste0(base_wss, account, "/venues/", venue, "/", type, "/", stock)
+    full_url <- paste0(base_wss, account, "/venues/", venue, "/", type, "/", "stocks/", stock)
     print(full_url)
-    system(paste0(location, "wsclient ", full_url, "> ", ofile, ".txt"),  wait=FALSE)
+    system(paste0(location, "wsclient ", full_url, "> ", ofile),  wait=FALSE)
 }
 ##' Run information functions in separate threads to ensure timing accuracy
 ##'
