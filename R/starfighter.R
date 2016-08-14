@@ -486,10 +486,10 @@ state_of_market <- function(level, apikey, timed=TRUE) {
     venue <- venue(level)
     stock <- ticker(level)
     if(timed) {
-        quote <- future::future(bquote(timed_quote(venue=.(venue), stock=.(stock))))
+        quote <- future::future(timed_quote(venue=venue, stock=stock))
         ord <- future::future(bquote(timed_orderbook(.(venue), .(stock))))
-        myorders <- future::future(bquote(timed_orderlist(.(testlev), apikey=.(apikey))))
-        status <- future::future(bquote(timed_status(.(testlev), apikey=.(apikey))))
+        myorders <- future::future(bquote(timed_orderlist(.(level), apikey=.(apikey))))
+        status <- future::future(bquote(timed_status(.(level), apikey=.(apikey))))
         } else {
     funclist <- list(
         bquote(as_orderbook(.(venue), .(stock))),
