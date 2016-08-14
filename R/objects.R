@@ -600,7 +600,8 @@ as_orderbook <- function(venue, stock) {
 ##' @author richie
 ##' @export
 as_quote <- function(venue, stock) {
-    q <- get_quote(venue, stock)
+    timedq <- timed(get_quote)(venue, stock)
+    q <- timedq
     qp <- parse_response(q)
     qq <- new_quote(qp)
 }
