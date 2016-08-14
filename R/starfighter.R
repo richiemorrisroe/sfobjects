@@ -384,11 +384,11 @@ get_all_tickers <- function(venues) {
 ##' @export
 timed <- function(f, ...) {
     function(...) {
-        dots <- as.list(substitute(list(...)))[-1L]
-        args <- formals(f)
-        names(dots) <- args
+        ## dots <- as.list(substitute(list(...)))[-1L]
+        ## args <- formals(f)
+        ## names(dots) <- args
         start <- withr::with_options(c(digits.secs=6), lubridate::now(tzone="UTC"))
-        res <- force(do.call(f, dots))
+        res <- f(...)
         end <- withr::with_options(c(digits.secs=6), lubridate::now(tzone="UTC"))
         res <- list(time=data.frame(start=start, end=end), res)
     }
@@ -429,10 +429,10 @@ state_of_market <- function(level, apikey, timed=TRUE) {
     venue <- venue(level)
     stock <- ticker(level)
     if(timed) {
-        quote <- future::future(bquote(timed_quote(venue=.(venue), stock=.(stock))))
-        ord <- future::future(bquote(timed_orderbook(.(venue), .(stock))))
-        myorders <- future::future(bquote(timed_orderlist(.(testlev), apikey=.(apikey))))
-        status <- future::future(bquote(timed_status(.(testlev), apikey=.(apikey))))
+        quote <- future::future(timed_quote(venue, stock))
+        ord <- future::future(timed_orderbook(venue, stock))
+        myorders <- future::future(timed_orderlist(level, apikey))
+        status <- future::future(timed_status(level, apikey=apikey))
         } else {
     funclist <- list(
         bquote(as_orderbook(.(venue), .(stock))),
