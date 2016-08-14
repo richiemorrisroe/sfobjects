@@ -18,4 +18,5 @@ Imports: stockfighterr,
     magrittr,
     methods,
     purrr,
-    future
+    future,
+    withr
