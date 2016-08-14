@@ -586,9 +586,9 @@ setMethod("print",
 ##' @author richie
 ##' @export
 as_orderbook <- function(venue, stock) {
-    res <- get_orderbook(venue, stock) %>%
-        parse_response() %>%
-        orderbook()
+    res <- get_orderbook(venue, stock) 
+     resp <- parse_response(res) 
+    respo <- orderbook(resp)
 }
 ##' get a quote and return a quote object
 ##'
@@ -618,8 +618,9 @@ as_quote <- function(venue, stock) {
 as_orderlist <- function(level, apikey) {
     account <- account(level)
     venue <- venue(level)
-    allord <- get_all_orders(venue, account, apikey) %>% parse_response()
-    ord <- allord$orders
+    allord <- get_all_orders(venue, account, apikey)
+    allordp <- parse_response(allord)
+    ord <- allordp$orders
     if(length(ord)>0 && dim(ord)[1] > 0) {
         ordlist <- apply(ord, 1, new_order)
     }
