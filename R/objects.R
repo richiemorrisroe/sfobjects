@@ -327,7 +327,8 @@ new_order <- function(response) {
                id = p$id,
                fills = p$fills,
                total_filled = p$totalFilled,
-               open = p$open)
+               open = p$open,
+               timestamp = data.frame(start=p$start, end=p$end))
     ord
 }
 ##' create a function that returns a component of an object
@@ -623,10 +624,16 @@ as_quote <- function(venue, stock) {
 as_orderlist <- function(level, apikey) {
     account <- account(level)
     venue <- venue(level)
+    start <- get_time()
     allord <- get_all_orders(venue, account, apikey)
+    end <- get_time()
+    ts <- make_timestamp(start, end)
     allordp <- parse_response(allord)
     ord <- allordp$orders
+    
     if(length(ord)>0 && dim(ord)[1] > 0) {
+        ord[,"start"] <- ts[1]
+        ord[,"end"] <- ts[2]
         ordlist <- apply(ord, 1, new_order)
     }
     else {
