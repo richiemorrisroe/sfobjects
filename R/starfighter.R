@@ -393,6 +393,28 @@ timed <- function(f, ...) {
         res <- list(time=data.frame(start=start, end=end), res)
     }
 }
+##' get a timestamp with 6 fractional seconds in specified timezone
+##'
+##' Use to get local time inside functions requiring network calls. This function defaults to UTC
+##' @title time
+##' @return a timestamp object
+##' @author richie
+##'@export
+get_time <- function(tz="UTC") {
+    instant <- withr::with_options(c(digits.secs=6), lubridate::now(tzone=tz))
+}
+##' Take the results of two calls to get_time, and return a dataframe containing the start and end of the interval
+##'
+##' Perhaps I should use the Interval class from lubridate?
+##' @title make_timestamp
+##' @param start the first instant
+##' @param end the last instant
+##' @return a data.frame containing start and end times
+##' @author richie
+##'@export
+make_timestamp <- function(start, end) {
+    res <- data.frame(start=start, end=end)
+}
 ## TODO: does this even work still?
 ##' shell out to wss program to get either executions or tickertape
 ##'
