@@ -390,7 +390,8 @@ orderbook <- function(order) {
              tickers=symbol,
              ymdhms=tsparsed,
              bids=bids,
-             asks=asks))
+             asks=asks,
+             timestamp=timestamp))
     orderbook
     }
 }
@@ -428,27 +429,23 @@ setMethod("as.data.frame",
 ##' @export
 new_quote <- function(quote) {
     q <- new("quote")
-    quote2 <- lapply(quote, function(x) ifelse(is.null(x), NA, x))
-    q@ok <- ifelse(!is.null(quote2$ok), quote2$ok, q@ok)
-    q@venues <- ifelse(!is.null(quote2$venue), quote2$venue, q@venue) 
-    q@tickers <- ifelse(!is.null(quote2$symbol), quote2$symbol, q@symbol) 
-    q@bid <- ifelse(!is.null(quote2$bid), quote2$bid, q@bid)
-    q@ask <- ifelse(!is.null(quote2$ask), quote2$ask, q@ask)
-    q@bidSize <- ifelse(!is.null(quote2$bidSize), quote2$bidSize, q@bidSize)
-    q@askSize <- ifelse(!is.null(quote2$askSize), quote2$askSize, q@askSize)
-    q@bidDepth <- ifelse(!is.null(quote2$bidDepth), quote2$bidDepth, q@bidDepth)
-    q@askDepth <- ifelse(!is.null(quote2$askDepth), quote2$askDepth, q@askDepth)
-    q@last <- ifelse(!is.null(quote2$last), quote2$last, q@last)
-    q@lastSize <- ifelse(!is.null(quote2$lastSize), quote2$lastSize, q@lastSize)
-    q@lastTrade <- ifelse(!is.null(quote2$lastTrade),
-                          (quote2$lastTrade),
-                          (q@lastTrade))
-    q@quoteTime <- ifelse(!is.null(quote2$quoteTime),
-                          (quote2$quoteTime),
-                          (q@quoteTime))
-    q@account <- ifelse(!is.null(quote2$account),
-                          (quote2$account),
-                          (q@account))
+    q@ok <- ifelse(!is.null(quote$ok), quote$ok, q@ok)
+    q@venues <- quote$venue
+    q@tickers <- quote$symbol
+    q@bid <- ifelse(!is.null(quote$bid), as.integer(quote$bid), 0L)
+    q@ask <- ifelse(!is.null(quote$ask), as.integer(quote$ask), 0L)
+    q@bidSize <- ifelse(!is.null(quote$bidSize), as.integer(quote$bidSize), 0L)
+    q@askSize <- ifelse(!is.null(quote$askSize), as.integer(quote$askSize), 0L)
+    q@bidDepth <- ifelse(!is.null(quote$bidDepth), as.integer(quote$bidDepth), 0L)
+    q@askDepth <- ifelse(!is.null(quote$askDepth),  as.integer(quote$askDepth), 0L)
+    q@last <- ifelse(!is.null(quote$last), quote$last, NA)
+    q@lastSize <- ifelse(!is.null(quote$lastSize), quote$lastSize, NA)
+    q@lastTrade <- ifelse(!is.null(quote$lastTrade),
+                          (quote$lastTrade), NA)
+    q@quoteTime <- ifelse(!is.null(quote$quoteTime),
+                          (quote$quoteTime), NA)
+    q@account <- "MISSING"
+    q@timestamp <- quote$timestamp
     q
 }
 ##' An as.data.frame method for quote
@@ -586,8 +583,12 @@ setMethod("print",
 ##' @author richie
 ##' @export
 as_orderbook <- function(venue, stock) {
-    res <- get_orderbook(venue, stock) 
-     resp <- parse_response(res) 
+    start <- get_time()
+    res <- get_orderbook(venue, stock)
+    end <- get_time()
+    timestamp <- make_timestamp(start, end)
+    resp <- parse_response(res)
+    resp$timestamp <- timestamp
     respo <- orderbook(resp)
 }
 ##' get a quote and return a quote object
@@ -600,8 +601,12 @@ as_orderbook <- function(venue, stock) {
 ##' @author richie
 ##' @export
 as_quote <- function(venue, stock) {
+    strt <- get_time()
     q <- get_quote(venue, stock)
+    end <- get_time()
+    timestamp <- make_timestamp(strt, end)
     qp <- parse_response(q)
+    qp$timestamp <- timestamp
     qq <- new_quote(qp)
 }
                                        
