@@ -49,10 +49,15 @@ level_status <- function(level, apikey)  {
     stopifnot(class(level)=="level") 
     instance <- level@id
     url <- paste(base_gm, "instances/", instance, sep="")
+    start <- get_time()
     res <- httr::GET(url,
                      httr::add_headers(
                          "X-Starfighter-Authorization"=apikey))
-    
+    end <- get_time()
+    ts <- make_timestamp(start, end)
+    resp <- stockfighterr::parse_response(res)
+    resp$timestamp <- ts
+    resp
 }
 ##' get the level id from a level object
 ##'
