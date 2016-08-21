@@ -439,12 +439,12 @@ new_quote <- function(quote) {
     q@askSize <- ifelse(!is.null(quote$askSize), as.integer(quote$askSize), 0L)
     q@bidDepth <- ifelse(!is.null(quote$bidDepth), as.integer(quote$bidDepth), 0L)
     q@askDepth <- ifelse(!is.null(quote$askDepth),  as.integer(quote$askDepth), 0L)
-    q@last <- ifelse(!is.null(quote$last), quote$last, NA)
-    q@lastSize <- ifelse(!is.null(quote$lastSize), quote$lastSize, NA)
+    q@last <- ifelse(!is.null(quote$last), quote$last, NA_integer_)
+    q@lastSize <- ifelse(!is.null(quote$lastSize), quote$lastSize, NA_integer_)
     q@lastTrade <- ifelse(!is.null(quote$lastTrade),
-                          (quote$lastTrade), NA)
+                          (quote$lastTrade), NA_character_)
     q@quoteTime <- ifelse(!is.null(quote$quoteTime),
-                          (quote$quoteTime), NA)
+                          (quote$quoteTime), NA_character_)
     q@account <- "MISSING"
     q@timestamp <- quote$timestamp
     q
@@ -585,10 +585,10 @@ setMethod("print",
 ##' @export
 as_orderbook <- function(venue, stock) {
     start <- get_time()
-    res <- get_orderbook(venue, stock)
+    res <- stockfighterr::get_orderbook(venue, stock)
     end <- get_time()
     timestamp <- make_timestamp(start, end)
-    resp <- parse_response(res)
+    resp <- stockfighterr::parse_response(res)
     resp$timestamp <- timestamp
     respo <- orderbook(resp)
 }
