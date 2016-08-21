@@ -456,16 +456,15 @@ state_of_market <- function(level, apikey, timed=TRUE) {
         myorders <- future::future(timed_orderlist(level, apikey))
         status <- future::future(timed_status(level, apikey=apikey))
         } else {
-    funclist <- list(
-        bquote(as_orderbook(.(venue), .(stock))),
-        bquote(as_quote(.(venue), .(stock))),
-        bquote(as_orderlist(.(level), .(apikey))),
-        bquote(parse_response(level_status(.(level)))))
+            quote <- future::future(as_quote(venue, stock))
+            ord <- future::future(as_orderbook(venue, stock))
+            myorders <- future::future(as_orderlist(level, apikey))
+            status <- future::future(level_status(level, apikey=apikey))
         }
-    res <- list(orderbook=ord,
-                quote=quote,
-                myorders=myorders,
-                status=status)
+    res <- list(orderbook=future::value(ord),
+                quote=future::value(quote),
+                myorders=future::value(myorders),
+                status=future::value(status))
     names(res) <- c("orderbook", "quote", "myorders", "level_status")
     res
 }
