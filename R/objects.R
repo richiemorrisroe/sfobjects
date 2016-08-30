@@ -452,27 +452,27 @@ new_quote <- function(quote) {
 ##' An as.data.frame method for quote
 ##'
 ##' See above
-##' @title as.vector.quote
+##' @title as.data.frame.quote
 ##' @param quote 
 ##' @return a vector containing the elements of the quote
 ##' @author richie
 ##' @export
 as.data.frame.quote <- function (x, row.names = NULL, optional = FALSE, ...) {
     res <- data.frame(
-        quote@bid ,
-        quote@ask,
-        quote@bidSize ,
-        quote@askSize ,
-        quote@bidDepth ,
-        quote@askDepth,
-        quote@last,
-        quote@lastSize ,
-        quote@lastTrade ,
-        quote@quoteTime,
-        quote@ok,
-        quote@account,
-        quote@venue ,
-        quote@symbol
+        x@bid ,
+        x@ask,
+        x@bidSize ,
+        x@askSize ,
+        x@bidDepth ,
+        x@askDepth,
+        x@last,
+        x@lastSize ,
+        x@lastTrade ,
+        x@quoteTime,
+        x@ok,
+        x@account,
+        x@venue ,
+        x@symbol
     )
     }
 setMethod("as.data.frame",
