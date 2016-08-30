@@ -283,7 +283,26 @@ order <- function(response) {
                open=response$open)
     return(ord)
 }
-
+setMethod("as.data.frame",
+    signature(x = "order-response"),
+    function (x, row.names = NULL, optional = FALSE, ...) 
+    {
+        res <- data.frame(ok=x@ok,
+               account=x@account,
+               venues=x@venues,
+               tickers=x@tickers,
+               ordertype=x@ordertype,
+               price=x@price,
+               qty=x@qty,
+               id=x@id,
+               ts=x@ts,
+               fills=x@fills,
+               total_filled=x@total_filled,
+               open=x@open,
+               start=x@timestamp$start,
+               end=x@timestamp$en)
+    }
+)
 setClass(Class="Position", slots = list(
                                total_sold = "integer",
                                total_bought = "integer",
