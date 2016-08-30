@@ -224,7 +224,7 @@ level_3_stats <- function(level) {
         return(NA)
     }
 }
-##TDOD: generalise all this to_df conversions
+##TODD: generalise all this to_df conversions
 ##' Take a series of calls to get_orderbook, and return the results as a df
 ##'
 ##' See above. Will document the fields here later
