@@ -17,4 +17,6 @@ Imports: stockfighterr,
     jsonlite,
     magrittr,
     methods,
-    purrr
+    purrr,
+    future,
+    withr

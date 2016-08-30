@@ -209,63 +209,6 @@ monitor <- function(venue, stock, level=level, name=name) {
     })
     ordlist
 }
-##TODO: take a state object and then decide - should not access network for data.
-##' Top level function for buying and selling according to rules
-##'
-##' See above
-##' @title market_make
-##' @param level a level object
-##' @param ordertype the type of orders to place
-##' @return a list containing the orders placed
-##' @author richie
-market_make <- function(level, ordertype="limit", qty=NULL) {
-    if(level=="TEST") {
-        account <- "EXB123456"
-        venue <- "TESTEX"
-        ticker <- "FOOBAR"
-        balance <- NULL
-    }
-    else {
-    account <- get_component(level, "account")
-    venue <- get_component(level, "venues")
-    ticker <- get_component(level, "tickers")
-    balance <- get_component(level, "balances")
-    }
-    ## browser()
-    buys <- NA
-    sells <- NA
-    prices <- c(buys, sells)
-    while(any(is.na(prices))) {
-    orders <- get_orderbook(venue, ticker)
-    parsed <- orderbook(parse_response(orders))
-    if(level!="TEST") {
-    status <- level_status(level=level)
-    status.p <- parse_response(status)
-    if(!is.null(status.p$flash)) {
-        flash <- status.p$flash
-        print(flash)
-    }
-    }
-    if(is.na(parsed@bids$price)) {
-        next
-    }
-    buys <- ceiling(min(parsed@bids$price))
-    sells <- floor(max(parsed@asks$price))
-    buy_qty <- floor(min(parsed@bids$qty))
-    sell_qty <- floor(min(parsed@asks$qty))
-    prices <- c(buys, sells)
-    qties <- c(buy_qty, sell_qty)
-    cat(prices, "\n")
-    }
-    directions <- c("buy", "sell")
-    if(is.null(qty)) {
-        qty <- 1
-    }
-    reslist <- list()
-
-    
-    
-}
 ##TODO: generalise for level-status object
 level_3_stats <- function(level) {
     stat <- level_status(level=level)
@@ -441,14 +384,36 @@ get_all_tickers <- function(venues) {
 ##' @export
 timed <- function(f, ...) {
     function(...) {
-        dots <- as.list(substitute(list(...)))[-1L]
-        args <- formals(f)
-        names(dots) <- args
+        ## dots <- as.list(substitute(list(...)))[-1L]
+        ## args <- formals(f)
+        ## names(dots) <- args
         start <- withr::with_options(c(digits.secs=6), lubridate::now(tzone="UTC"))
-        res <- force(do.call(f, dots))
+        res <- f(...)
         end <- withr::with_options(c(digits.secs=6), lubridate::now(tzone="UTC"))
         res <- list(time=data.frame(start=start, end=end), res)
     }
+}
+##' get a timestamp with 6 fractional seconds in specified timezone
+##'
+##' Use to get local time inside functions requiring network calls. This function defaults to UTC
+##' @title time
+##' @return a timestamp object
+##' @author richie
+##'@export
+get_time <- function(tz="UTC") {
+    instant <- withr::with_options(c(digits.secs=6), lubridate::now(tzone=tz))
+}
+##' Take the results of two calls to get_time, and return a dataframe containing the start and end of the interval
+##'
+##' Perhaps I should use the Interval class from lubridate?
+##' @title make_timestamp
+##' @param start the first instant
+##' @param end the last instant
+##' @return a data.frame containing start and end times
+##' @author richie
+##'@export
+make_timestamp <- function(start, end) {
+    res <- data.frame(start=start, end=end)
 }
 ## TODO: does this even work still?
 ##' shell out to wss program to get either executions or tickertape
@@ -486,21 +451,20 @@ state_of_market <- function(level, apikey, timed=TRUE) {
     venue <- venue(level)
     stock <- ticker(level)
     if(timed) {
-        quote <- future::future(timed_quote(venue=venue, stock=stock))
-        ord <- future::future(bquote(timed_orderbook(.(venue), .(stock))))
-        myorders <- future::future(bquote(timed_orderlist(.(level), apikey=.(apikey))))
-        status <- future::future(bquote(timed_status(.(level), apikey=.(apikey))))
+        quote <- future::future(timed_quote(venue, stock))
+        ord <- future::future(timed_orderbook(venue, stock))
+        myorders <- future::future(timed_orderlist(level, apikey))
+        status <- future::future(timed_status(level, apikey=apikey))
         } else {
-    funclist <- list(
-        bquote(as_orderbook(.(venue), .(stock))),
-        bquote(as_quote(.(venue), .(stock))),
-        bquote(as_orderlist(.(level), .(apikey))),
-        bquote(parse_response(level_status(.(level)))))
+            quote <- future::future(as_quote(venue, stock))
+            ord <- future::future(as_orderbook(venue, stock))
+            myorders <- future::future(as_orderlist(level, apikey))
+            status <- future::future(level_status(level, apikey=apikey))
         }
-    res <- list(orderbook=ord,
-                quote=quote,
-                myorders=myorders,
-                status=status)
+    res <- list(orderbook=future::value(ord),
+                quote=future::value(quote),
+                myorders=future::value(myorders),
+                status=future::value(status))
     names(res) <- c("orderbook", "quote", "myorders", "level_status")
     res
 }

@@ -3,11 +3,13 @@ setClass(Class="trades",
          slots=list(ok = "logical",
                     account = "character",
                     venues = "character",
-                    tickers = "character"),
+                    tickers = "character",
+                    timestamp="data.frame"),
          prototype=list(ok=NA,
                         account=NA_character_,
                         venues=NA_character_,
-                        tickers=NA_character_))
+                        tickers=NA_character_,
+                        timestamp=data.frame(start=NA, end=NA)))
 ##TODO: this doesn't match the signature returned by timed_ functions
 ##TODO: this also needs a constructor function
 setClass(Class="Timed",
@@ -324,7 +326,8 @@ new_order <- function(response) {
                id = p$id,
                fills = p$fills,
                total_filled = p$totalFilled,
-               open = p$open)
+               open = p$open,
+               timestamp = data.frame(start=p$start, end=p$end))
     ord
 }
 ##' create a function that returns a component of an object
@@ -387,7 +390,8 @@ orderbook <- function(order) {
              tickers=symbol,
              ymdhms=tsparsed,
              bids=bids,
-             asks=asks))
+             asks=asks,
+             timestamp=timestamp))
     orderbook
     }
 }
@@ -425,53 +429,49 @@ setMethod("as.data.frame",
 ##' @export
 new_quote <- function(quote) {
     q <- new("quote")
-    quote2 <- lapply(quote, function(x) ifelse(is.null(x), NA, x))
-    q@ok <- ifelse(!is.null(quote2$ok), quote2$ok, q@ok)
-    q@venues <- ifelse(!is.null(quote2$venue), quote2$venue, q@venue) 
-    q@tickers <- ifelse(!is.null(quote2$symbol), quote2$symbol, q@symbol) 
-    q@bid <- ifelse(!is.null(quote2$bid), quote2$bid, q@bid)
-    q@ask <- ifelse(!is.null(quote2$ask), quote2$ask, q@ask)
-    q@bidSize <- ifelse(!is.null(quote2$bidSize), quote2$bidSize, q@bidSize)
-    q@askSize <- ifelse(!is.null(quote2$askSize), quote2$askSize, q@askSize)
-    q@bidDepth <- ifelse(!is.null(quote2$bidDepth), quote2$bidDepth, q@bidDepth)
-    q@askDepth <- ifelse(!is.null(quote2$askDepth), quote2$askDepth, q@askDepth)
-    q@last <- ifelse(!is.null(quote2$last), quote2$last, q@last)
-    q@lastSize <- ifelse(!is.null(quote2$lastSize), quote2$lastSize, q@lastSize)
-    q@lastTrade <- ifelse(!is.null(quote2$lastTrade),
-                          (quote2$lastTrade),
-                          (q@lastTrade))
-    q@quoteTime <- ifelse(!is.null(quote2$quoteTime),
-                          (quote2$quoteTime),
-                          (q@quoteTime))
-    q@account <- ifelse(!is.null(quote2$account),
-                          (quote2$account),
-                          (q@account))
+    q@ok <- ifelse(!is.null(quote$ok), quote$ok, q@ok)
+    q@venues <- quote$venue
+    q@tickers <- quote$symbol
+    q@bid <- ifelse(!is.null(quote$bid), as.integer(quote$bid), 0L)
+    q@ask <- ifelse(!is.null(quote$ask), as.integer(quote$ask), 0L)
+    q@bidSize <- ifelse(!is.null(quote$bidSize), as.integer(quote$bidSize), 0L)
+    q@askSize <- ifelse(!is.null(quote$askSize), as.integer(quote$askSize), 0L)
+    q@bidDepth <- ifelse(!is.null(quote$bidDepth), as.integer(quote$bidDepth), 0L)
+    q@askDepth <- ifelse(!is.null(quote$askDepth),  as.integer(quote$askDepth), 0L)
+    q@last <- ifelse(!is.null(quote$last), quote$last, NA_integer_)
+    q@lastSize <- ifelse(!is.null(quote$lastSize), quote$lastSize, NA_integer_)
+    q@lastTrade <- ifelse(!is.null(quote$lastTrade),
+                          (quote$lastTrade), NA_character_)
+    q@quoteTime <- ifelse(!is.null(quote$quoteTime),
+                          (quote$quoteTime), NA_character_)
+    q@account <- "MISSING"
+    q@timestamp <- quote$timestamp
     q
 }
 ##' An as.data.frame method for quote
 ##'
 ##' See above
-##' @title as.vector.quote
+##' @title as.data.frame.quote
 ##' @param quote 
 ##' @return a vector containing the elements of the quote
 ##' @author richie
 ##' @export
 as.data.frame.quote <- function (x, row.names = NULL, optional = FALSE, ...) {
     res <- data.frame(
-        quote@bid ,
-        quote@ask,
-        quote@bidSize ,
-        quote@askSize ,
-        quote@bidDepth ,
-        quote@askDepth,
-        quote@last,
-        quote@lastSize ,
-        quote@lastTrade ,
-        quote@quoteTime,
-        quote@ok,
-        quote@account,
-        quote@venue ,
-        quote@symbol
+        x@bid ,
+        x@ask,
+        x@bidSize ,
+        x@askSize ,
+        x@bidDepth ,
+        x@askDepth,
+        x@last,
+        x@lastSize ,
+        x@lastTrade ,
+        x@quoteTime,
+        x@ok,
+        x@account,
+        x@venue ,
+        x@symbol
     )
     }
 setMethod("as.data.frame",
@@ -609,9 +609,13 @@ as_status <- function(level, apikey) {
 ##' @author richie
 ##' @export
 as_orderbook <- function(venue, stock) {
-    res <- get_orderbook(venue, stock) %>%
-        parse_response() %>%
-        orderbook()
+    start <- get_time()
+    res <- stockfighterr::get_orderbook(venue, stock)
+    end <- get_time()
+    timestamp <- make_timestamp(start, end)
+    resp <- stockfighterr::parse_response(res)
+    resp$timestamp <- timestamp
+    respo <- orderbook(resp)
 }
 ##' get a quote and return a quote object
 ##'
@@ -623,8 +627,12 @@ as_orderbook <- function(venue, stock) {
 ##' @author richie
 ##' @export
 as_quote <- function(venue, stock) {
+    strt <- get_time()
     q <- get_quote(venue, stock)
+    end <- get_time()
+    timestamp <- make_timestamp(strt, end)
     qp <- parse_response(q)
+    qp$timestamp <- timestamp
     qq <- new_quote(qp)
 }
                                        
@@ -641,9 +649,16 @@ as_quote <- function(venue, stock) {
 as_orderlist <- function(level, apikey) {
     account <- account(level)
     venue <- venue(level)
-    allord <- get_all_orders(venue, account, apikey) %>% parse_response()
-    ord <- allord$orders
+    start <- get_time()
+    allord <- get_all_orders(venue, account, apikey)
+    end <- get_time()
+    ts <- make_timestamp(start, end)
+    allordp <- parse_response(allord)
+    ord <- allordp$orders
+    
     if(length(ord)>0 && dim(ord)[1] > 0) {
+        ord[,"start"] <- ts[1]
+        ord[,"end"] <- ts[2]
         ordlist <- apply(ord, 1, new_order)
     }
     else {
