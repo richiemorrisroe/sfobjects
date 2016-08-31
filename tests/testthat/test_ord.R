@@ -130,5 +130,5 @@ test_that("get spreads returns a vector of length two", {
     pos <- new("Position")
     q <- as_quote("TESTEX", "FOOBAR")
     pos@current_position <- 0L
-    expect_equal(length(get_spreads("TESTEX", "FOOBAR", position=pos, spread=100, quote=q)), 2)
+    expect_equal(length(get_spreads("TESTEX", "FOOBAR", position=pos, spread=100, quote=q)), 3)
 })
