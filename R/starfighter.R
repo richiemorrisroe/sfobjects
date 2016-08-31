@@ -263,29 +263,6 @@ parse_orderlist <- function(orderlist, parallel=TRUE, data.frame=TRUE) {
     res
 }
 
-##TODO: use this position, in updating state, no network access used
-##' Some stuff
-##'
-##' Some more stuff
-##' @title get_position
-##' @param orders 
-##' @return a dataframe containing the current position
-##' @author richie
-##' @export
-get_position <- function(orders) {
-    ord2 <- orders
-    if(sum(ord2$total_filled)==0) {
-        return(data.frame(direction=NA, spend2=NA, total_filled=0, ppu=0))
-    }
-    fills <- select(ord2, id, direction, ts, ts_fill, qty_filled, qty=orig_qty)
-        dplyr::mutate_(spend=price*qty) %>%
-        dplyr::group_by(direction) %>%
-        dplyr::summarise(spend2=sum(spend),
-                  total_filled=sum(total_filled)) %>%
-        dplyr::mutate(ppu=spend2/total_filled)
-    pos
-    
-}
 
 ##TODO: remove network access keep logic
 ##' Currently just gets bid and ask price
