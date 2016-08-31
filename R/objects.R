@@ -283,10 +283,15 @@ order <- function(response) {
                open=response$open)
     return(ord)
 }
+##'@export
 setMethod("as.data.frame",
     signature(x = "order-response"),
     function (x, row.names = NULL, optional = FALSE, ...) 
-    {
+    {if(length(x@fills)==0) {
+         x@fills$price <- NA
+         x@fills$qty <- 0
+         x@fills$ts <- NA
+     }
         res <- data.frame(ok=x@ok,
                account=x@account,
                venues=x@venues,
@@ -296,7 +301,9 @@ setMethod("as.data.frame",
                qty=x@qty,
                id=x@id,
                ts=x@ts,
-               fills=x@fills,
+               price_fill=x@fills$price
+               ts_file=x@fills$ts,
+               qty_fill=x@fills$qty,
                total_filled=x@total_filled,
                open=x@open,
                start=x@timestamp$start,
