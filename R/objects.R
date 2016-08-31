@@ -301,8 +301,8 @@ setMethod("as.data.frame",
                qty=x@qty,
                id=x@id,
                ts=x@ts,
-               price_fill=x@fills$price
-               ts_file=x@fills$ts,
+               price_fill=x@fills$price,
+               ts_fill=x@fills$ts,
                qty_fill=x@fills$qty,
                total_filled=x@total_filled,
                open=x@open,
@@ -685,6 +685,7 @@ as_orderlist <- function(level, apikey) {
     if(length(ord)>0 && dim(ord)[1] > 0) {
         ord[,"start"] <- ts[1]
         ord[,"end"] <- ts[2]
+        ##TODO: apply breaks fractional seconds
         ordlist <- apply(ord, 1, new_order)
     }
     else {
