@@ -163,31 +163,7 @@ get_spreads <- function(venue, stock, position, spread, quote) {
     }
     res
 }
-##TODO: use this function somewhere. Need to keep track of P&L at the order level
-##' Some stuff
-##'
-##' Some more stuff
-##' @title get_position
-##' @param orders 
-##' @return a dataframe containing the current position
-##' @author richie
-##' @export
-get_position <- function(orders) {
-    ord2 <- orders$orders
-    if(sum(ord2$totalFilled)==0) {
-        return(data.frame(direction=NA, spend2=NA, total_filled=0, ppu=0))
-    }
-    fills <- select(ord2, id, direction, fills, totalFilled)
-    fills2 <- tidyr::unnest(fills)
-    pos <- fills2 %>%
-        mutate(spend=price*qty) %>%
-        group_by(direction) %>%
-        summarise(spend2=sum(spend),
-                  total_filled=sum(totalFilled)) %>%
-        mutate(ppu=spend2/total_filled)
-    pos
-    
-}
+
 ##TODO: die, network access, die.
 ##TODO: either this or get_position is redundant
 ##' Update a position object based on orders
