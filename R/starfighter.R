@@ -257,7 +257,6 @@ parse_orderlist <- function(orderlist, parallel=TRUE, data.frame=TRUE) {
         odlok <- lapply(od.p, function (x) lapply(x, function (y) y$ok==TRUE))
         od.ob <- odlok %>% lapply(., function (x) sapply(x, function (y) orderbook(y)))
         od.df <- lapply(od.ob, function (x) lapply(x, function (y) as.data.frame.orderbook(y)))
-        browser()
         res <- do.call("rbind", od.df)
     }
     res
