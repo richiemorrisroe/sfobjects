@@ -13,7 +13,7 @@ setClass(Class="trades",
 ##TODO: this doesn't match the signature returned by timed_ functions
 ##TODO: this also needs a constructor function
 setClass(Class="Timed",
-         slots=list(timestamp="POSIXct", res="ANY"))
+         slots=list(timestamp="data.frame", res="ANY"))
 ##' Extract the local ts from an object inheriting from class Time
 ##'
 ##' Simples.
@@ -84,14 +84,32 @@ setGeneric("venue", function (object) {
 ##' @return a length one character vector containing the stock(s) traded on the level
 ##' @author richie
 ##' @export
-ticker <- function(object) {
-    object@tickers
-}
-setMethod("ticker", signature("trades"),
-          def = ticker)
 setGeneric("ticker", function (object) {
     standardGeneric("ticker")
 })
+ticker.default <- function (object) {
+    object@tickers
+}
+ticker.trades <- function(object) {
+    object@tickers
+}
+setMethod("ticker", signature("trades"),
+          def = ticker.trades)
+
+##' @export
+ticker.Timed <- function(object) {
+    obj <- object@res
+    ticker(obj)
+}
+setMethod("ticker", signature("Timed"),
+          def = ticker.Timed)
+
+##' @export
+
+## ##' @export
+## ticker.default <- function(object) {
+##     message("No method defined")
+## }
 ##TODO: can this be generalised to handle quotes also
 ##TODO: why do we need seperate functions for bids and asks?
 ##TODO: use parse_ts
@@ -485,20 +503,20 @@ new_quote <- function(quote) {
 ##' @export
 as.data.frame.quote <- function (x, row.names = NULL, optional = FALSE, ...) {
     res <- data.frame(
-        x@bid ,
-        x@ask,
-        x@bidSize ,
-        x@askSize ,
-        x@bidDepth ,
-        x@askDepth,
-        x@last,
-        x@lastSize ,
-        x@lastTrade ,
-        x@quoteTime,
-        x@ok,
-        x@account,
-        x@venue ,
-        x@symbol
+       bid = x@bid ,
+       ask = x@ask,
+       bidSize = x@bidSize ,
+       askSize = x@askSize ,
+       bidDepth = x@bidDepth ,
+       askDepth = x@askDepth,
+       last = x@last,
+       lastSize = x@lastSize ,
+       lastTrade = x@lastTrade ,
+       quoteTime = x@quoteTime,
+       ok = x@ok,
+       account = x@account,
+       venue = x@venues ,
+       ticker = x@tickers
     )
     }
 setMethod("as.data.frame",
